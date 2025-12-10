@@ -32,9 +32,15 @@ def load_retnet_model(
         >>> print(f"Model loaded with {sum(p.numel() for p in model.parameters()) / 1e9:.2f}B parameters")
     """
     try:
-        from transformers import AutoModel, AutoTokenizer
-    except ImportError:
-        raise ImportError("transformers library not found. Install with: pip install transformers")
+        from fla.models.retnet import RetNetForCausalLM
+        from transformers import AutoTokenizer
+    except ImportError as e:
+        raise ImportError(
+            "Required libraries not found. Please install:\n"
+            "  pip install transformers\n"
+            "  pip install git+https://github.com/sustcsonglin/flash-linear-attention.git\n"
+            f"Error: {e}"
+        )
 
     # Auto-detect device if not specified
     if device is None:
@@ -48,17 +54,14 @@ def load_retnet_model(
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
-    # Load model
-    model = AutoModel.from_pretrained(
+    # Load model using Flash Linear Attention library
+    model = RetNetForCausalLM.from_pretrained(
         model_name,
-        trust_remote_code=True,  # Required for custom models
         torch_dtype=torch_dtype,
-        device_map=device if device != "cpu" else None,  # Use device_map for efficient loading
     )
 
-    # Move to device if not using device_map
-    if device == "cpu":
-        model = model.to(device)
+    # Move to device
+    model = model.to(device)
 
     # Set to evaluation mode
     model.eval()

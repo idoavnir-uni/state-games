@@ -1,0 +1,24 @@
+# Cursor AI Rules for this Project
+
+## Code Style
+- Write clean, production-quality code
+- Follow DRY (Don't Repeat Yourself) principles
+- Keep imports at the top of files - never in the middle unless absolutely necessary
+- Minimize comments - let the code speak for itself
+- Use clear variable and function names instead of explanatory comments
+
+## Documentation
+- Keep documentation minimal and only when essential
+
+## Implementation
+- Implement code directly without extensive documentation
+- Focus on code quality over explanation
+
+## File Creation
+- Only create files that are functionally necessary
+- Avoid helper/explanation markdown files
+- Avoid example scripts unless specifically requested
+
+## Communication
+- Be concise in responses
+

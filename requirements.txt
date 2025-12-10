@@ -4,12 +4,15 @@ huggingface_hub
 numpy
 pandas
 matplotlib
+seaborn
 einops
 jupyter
 h5py
 scikit-learn
 
-# Flash Linear Attention library
+# Flash Linear Attention library (REQUIRED for RetNet)
+# This library provides the RetNet implementation
 # Install with: pip install git+https://github.com/sustcsonglin/flash-linear-attention.git
 # Repository: https://github.com/sustcsonglin/flash-linear-attention
+# Note: Must be installed separately as it's not on PyPI
 
