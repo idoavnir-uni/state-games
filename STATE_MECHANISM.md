@@ -58,16 +58,19 @@ past_key_values.update(
 
 ## State Shape
 
-For RetNet-2.7B (hidden_size=2048, num_heads=8, expand_k=1.0, expand_v=2.0):
+For RetNet-2.7B, the actual extracted shape is:
 
 ```python
-recurrent_state.shape = [batch, num_heads, key_dim_per_head, value_dim_per_head]
-                      = [1, 8, 256, 512]
+recurrent_state.shape = [batch, sequence_length, state_dim]
+                      = [1, 13, 2560]
 ```
 
 Where:
-- `key_dim_per_head = (hidden_size * expand_k) / num_heads = 2048 * 1.0 / 8 = 256`
-- `value_dim_per_head = (hidden_size * expand_v) / num_heads = 2048 * 2.0 / 8 = 512`
+- `batch` = 1 (batch size)
+- `sequence_length` = 13 (number of tokens in input)
+- `state_dim` = 2560 (compressed state dimension)
+
+The state stores information **per position** in the sequence, not just a single accumulated state. Each position has its own 2560-dimensional state vector representing the accumulated K⊗V memory up to that point.
 
 ## Our Extraction Code
 
@@ -86,24 +89,27 @@ for layer_idx, layer_state in enumerate(past_kv):
 
 ## What We Get
 
-Running `extractor.extract_states(input_ids)` with sequence length N returns:
+Running `extractor.extract_states(input_ids)` with sequence length N=13 returns:
 
 ```python
 {
-    0: tensor[1, 8, 256, 512],  # Layer 0 final state (after N tokens)
-    1: tensor[1, 8, 256, 512],  # Layer 1 final state
+    0: tensor[1, 13, 2560],  # Layer 0 states (one per position)
+    1: tensor[1, 13, 2560],  # Layer 1 states
     ...
-    31: tensor[1, 8, 256, 512]  # Layer 31 final state
+    31: tensor[1, 13, 2560]  # Layer 31 states
 }
 ```
 
-Each state is the **final accumulated K⊗V memory** after processing all N tokens in that layer.
+Each state contains the accumulated K⊗V memory **at each position** in the sequence:
+- `state[0, 0, :]` = memory after token 1
+- `state[0, 1, :]` = memory after tokens 1-2
+- `state[0, 12, :]` = memory after all 13 tokens
 
 ## Key Points
 
 1. **One state per layer** - 32 independent recurrent states
-2. **Accumulated over sequence** - Contains information from all previous tokens
-3. **Exponentially decayed** - Recent tokens weighted more heavily
+2. **States per position** - Each position has accumulated memory from all previous tokens
+3. **Exponentially decayed** - Recent tokens weighted more heavily via γ decay
 4. **Before query multiplication** - Raw memory, not attention output
-5. **Final state only** - Current implementation extracts end-of-sequence state, not intermediate positions
+5. **Position-wise extraction** - We get states at all positions [0..N-1], not just the final one
 

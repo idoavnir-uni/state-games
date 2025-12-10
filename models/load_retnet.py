@@ -79,38 +79,3 @@ def print_model_structure(model: torch.nn.Module, max_depth: int = 3):
 
     print_modules(model)
     print("=======================\n")
-
-
-def test_inference(model: torch.nn.Module, tokenizer, test_text: str = "The quick brown fox"):
-    print(f"\n=== Testing Inference ===")
-    print(f"Input: '{test_text}'")
-
-    inputs = tokenizer(test_text, return_tensors="pt")
-    input_ids = inputs.input_ids.to(model.device)
-
-    print(f"Input shape: {input_ids.shape}")
-    print(f"Tokens: {tokenizer.convert_ids_to_tokens(input_ids[0])}")
-
-    with torch.no_grad():
-        outputs = model(input_ids)
-
-    print(f"Output type: {type(outputs)}")
-    if hasattr(outputs, "last_hidden_state"):
-        print(f"Hidden state shape: {outputs.last_hidden_state.shape}")
-    elif isinstance(outputs, torch.Tensor):
-        print(f"Output shape: {outputs.shape}")
-    else:
-        print(f"Output keys: {outputs.keys() if hasattr(outputs, 'keys') else 'N/A'}")
-
-    print("=========================\n")
-
-    return outputs
-
-
-if __name__ == "__main__":
-    print("Loading RetNet model...")
-    model, tokenizer = load_retnet_model(device="cuda")
-
-    config = get_model_config(model)
-    print_model_structure(model, max_depth=2)
-    test_inference(model, tokenizer, "Hello, how are you?")

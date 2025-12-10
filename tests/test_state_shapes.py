@@ -5,7 +5,7 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from models.load_retnet import load_retnet_model, get_model_config
+from models.load_retnet import load_retnet_model
 from models.state_extractor import RetNetStateExtractor, save_states_to_file, load_states_from_file
 
 
@@ -19,9 +19,7 @@ def model_and_tokenizer():
 @pytest.fixture(scope="module")
 def extractor(model_and_tokenizer):
     model, _ = model_and_tokenizer
-    extractor = RetNetStateExtractor(model, verbose=True)
-    extractor.register_hooks()
-    return extractor
+    return RetNetStateExtractor(model, verbose=True)
 
 
 def test_state_extraction(extractor, model_and_tokenizer):
@@ -42,7 +40,7 @@ def test_state_shapes(extractor, model_and_tokenizer):
 
     for layer_idx, state in states.items():
         assert isinstance(state, torch.Tensor)
-        assert state.dim() in [3, 4]
+        assert state.dim() == 3
         assert state.shape[0] == input_ids.shape[0]
 
 
@@ -79,7 +77,6 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, tokenizer = load_retnet_model(device=device)
     extractor = RetNetStateExtractor(model, verbose=True)
-    extractor.register_hooks()
 
     test_state_extraction(extractor, (model, tokenizer))
     test_state_shapes(extractor, (model, tokenizer))
