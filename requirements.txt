@@ -1,0 +1,15 @@
+torch>=2.0.0
+transformers>=4.30.0
+huggingface_hub
+numpy
+pandas
+matplotlib
+einops
+jupyter
+h5py
+scikit-learn
+
+# Flash Linear Attention library
+# Install with: pip install git+https://github.com/sustcsonglin/flash-linear-attention.git
+# Repository: https://github.com/sustcsonglin/flash-linear-attention
+
