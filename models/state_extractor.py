@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 from typing import Dict, Optional
@@ -35,8 +36,6 @@ class RetNetStateExtractor:
 
 
 def save_states_to_file(states: Dict, filepath: str):
-    import os
-
     _, ext = os.path.splitext(filepath)
 
     if ext == ".npz":
@@ -60,8 +59,6 @@ def save_states_to_file(states: Dict, filepath: str):
 
 
 def load_states_from_file(filepath: str) -> Dict[int, np.ndarray]:
-    import os
-
     _, ext = os.path.splitext(filepath)
 
     if ext == ".npz":
@@ -91,7 +88,7 @@ def load_states_from_file(filepath: str) -> Dict[int, np.ndarray]:
 
 
 if __name__ == "__main__":
-    from load_retnet import load_retnet_model
+    from models.load_retnet import load_retnet_model
 
     print("Loading model...")
     model, tokenizer = load_retnet_model(device="cuda")
