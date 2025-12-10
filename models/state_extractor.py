@@ -85,15 +85,21 @@ class RetNetStateExtractor:
             try:
                 state = None
 
-                if isinstance(output, tuple):
-                    if len(output) >= 2:
-                        for item in output[1:]:
-                            if isinstance(item, torch.Tensor):
-                                if item.dim() in [3, 4]:
-                                    state = item
-                                    break
+                if isinstance(output, tuple) and len(output) >= 3:
+                    past_key_values = output[2]
+                    if past_key_values is not None and hasattr(past_key_values, "key_value_states"):
+                        if layer_idx < len(past_key_values.key_value_states):
+                            layer_state = past_key_values.key_value_states[layer_idx]
+                            if layer_state is not None and "recurrent_state" in layer_state:
+                                state = layer_state["recurrent_state"]
 
-                elif isinstance(output, dict):
+                if state is None and isinstance(output, tuple):
+                    for item in output:
+                        if isinstance(item, torch.Tensor) and item.dim() in [3, 4]:
+                            state = item
+                            break
+
+                if state is None and isinstance(output, dict):
                     for key in ["state", "retention_state", "recurrent_state", "past_key_value"]:
                         if key in output:
                             state = output[key]
@@ -106,10 +112,6 @@ class RetNetStateExtractor:
                             if isinstance(attr, torch.Tensor):
                                 state = attr
                                 break
-
-                if state is None and isinstance(output, torch.Tensor):
-                    if output.dim() in [3, 4]:
-                        state = output
 
                 if state is not None:
                     self.states[layer_idx] = state.detach().cpu()
@@ -145,12 +147,20 @@ class RetNetStateExtractor:
             hook.remove()
         self.hooks = []
 
-    def extract_states(self, input_ids: torch.Tensor) -> Dict[int, torch.Tensor]:
+    def extract_states(self, input_ids: torch.Tensor, use_cache: bool = True) -> Dict[int, torch.Tensor]:
         self.states = {}
 
         with torch.no_grad():
             try:
-                _ = self.model(input_ids)
+                outputs = self.model(input_ids, use_cache=use_cache)
+
+                if use_cache and hasattr(outputs, "past_key_values") and outputs.past_key_values is not None:
+                    past_kv = outputs.past_key_values
+                    if hasattr(past_kv, "key_value_states"):
+                        for layer_idx, layer_state in enumerate(past_kv.key_value_states):
+                            if layer_state is not None and isinstance(layer_state, dict):
+                                if "recurrent_state" in layer_state:
+                                    self.states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
             except Exception as e:
                 warnings.warn(f"Error during forward pass: {str(e)}")
                 raise
