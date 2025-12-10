@@ -6,6 +6,7 @@
 - Keep imports at the top of files - never in the middle unless absolutely necessary
 - Minimize comments - let the code speak for itself
 - Use clear variable and function names instead of explanatory comments
+- Write minimal, focused tests - avoid extensive test suites unless essential
 
 ## Documentation
 - Keep documentation minimal and only when essential
