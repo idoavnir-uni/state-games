@@ -17,22 +17,12 @@ pip install -r requirements.txt
 
 # Install Flash Linear Attention library (REQUIRED for RetNet)
 pip install git+https://github.com/sustcsonglin/flash-linear-attention.git
-
-# Run setup script (handles both dependencies)
-./setup.sh
 ```
 
 ### Common Development Commands
 ```bash
-# Run tests
-python tests/test_state_shapes.py
-pytest tests/  # If pytest is available
-
 # Run Jupyter notebooks for experiments
 jupyter notebook notebooks/01_test_state_extraction.ipynb
-
-# Quick test of state extraction
-python -m models.state_extractor
 
 # Check CUDA availability
 python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
@@ -44,15 +34,14 @@ python -c "import torch; print(f'CUDA available: {torch.cuda.is_available()}')"
 
 1. **Model Loading (`models/load_retnet.py`)**: Utilities for loading the RetNet model and extracting configuration
 2. **State Extraction (`models/state_extractor.py`)**: Core functionality for extracting retention states using PyTorch hooks
-3. **Testing (`tests/`)**: Unit tests for state extraction and validation
 
 ### State Extraction Methods
 
 The `RetNetStateExtractor` class provides multiple extraction methods:
 
-- `extract_states(input_ids)`: Extract final accumulated K⊗V states after processing all tokens
-- `extract_states_incremental(input_ids)`: Extract states at each position (O(N²) method)  
-- `extract_states_single_pass(input_ids)`: Efficiently extract states at each position (O(N) method)
+- `extract_final_states(input_ids)`: Extract final accumulated K⊗V states after processing all tokens
+- `extract_incremental_states_dumb_rerunning(input_ids)`: Extract states at each position (O(N²) method)  
+- `extract_incremental_states_single_pass(input_ids)`: Efficiently extract states at each position (O(N) method)
 - `extract_states_at_positions(input_ids, positions)`: Extract states only at specific positions
 
 ### RetNet State Mechanism
@@ -86,7 +75,7 @@ model, tokenizer = load_retnet_model(device="cuda")
 extractor = RetNetStateExtractor(model)
 text = "The quick brown fox jumps over the lazy dog."
 input_ids = tokenizer(text, return_tensors="pt").input_ids.to(model.device)
-states = extractor.extract_states(input_ids)
+states = extractor.extract_final_states(input_ids)
 
 # states is Dict[layer_idx, tensor] with 32 layers
 for layer_idx, state in states.items():

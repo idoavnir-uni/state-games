@@ -33,12 +33,9 @@ interpretability-proj/
 ├── models/                       # Model loading and state extraction
 │   ├── __init__.py
 │   ├── load_retnet.py           # Model loading utilities
-│   ├── state_extractor.py       # State extraction implementation
-│   └── ARCHITECTURE.md          # RetNet architecture documentation
-├── notebooks/                    # Jupyter notebooks for experiments
-│   └── 01_test_state_extraction.ipynb
-└── tests/                        # Unit tests
-    └── test_state_shapes.py
+│   └── state_extractor.py       # State extraction implementation
+└── notebooks/                    # Jupyter notebooks for experiments
+    └── 01_test_state_extraction.ipynb
 ```
 
 ## Phase 1: State Extraction
@@ -69,7 +66,7 @@ extractor.register_hooks()
 # Run inference and collect states
 text = "This is a test sentence."
 input_ids = tokenizer(text, return_tensors="pt").input_ids.to(model.device)
-states = extractor.extract_states(input_ids)
+states = extractor.extract_final_states(input_ids)
 
 # Access states by layer
 for layer_idx, layer_states in states.items():

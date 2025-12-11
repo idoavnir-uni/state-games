@@ -19,7 +19,55 @@ class RetNetStateExtractor:
         self.model = model
         self.verbose = verbose
 
-    def extract_states_single_pass(
+    def extract_final_states(self, input_ids: torch.Tensor, use_cache: bool = True) -> Dict[int, torch.Tensor]:
+        states = {}
+
+        with torch.no_grad():
+            outputs = self.model(input_ids, use_cache=use_cache)
+
+            if outputs.past_key_values is not None:
+                for layer_idx, layer_state in enumerate(outputs.past_key_values):
+                    if layer_state is not None and "recurrent_state" in layer_state:
+                        states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
+
+        if len(states) == 0:
+            warnings.warn("No states were captured! Check that use_cache=True and model supports caching.")
+
+        return states
+
+    def extract_incremental_states_dumb_rerunning(
+        self,
+        input_ids: torch.Tensor,
+        layers: Optional[List[int]] = None,
+    ) -> Dict[int, Dict[int, torch.Tensor]]:
+        seq_len = input_ids.shape[1]
+        states_by_position = {}
+
+        if self.verbose:
+            print(f"Extracting states incrementally for {seq_len} positions...")
+
+        with torch.no_grad():
+            for pos in range(1, seq_len + 1):
+                partial_ids = input_ids[:, :pos].contiguous()
+                outputs = self.model(partial_ids, use_cache=True)
+
+                position_states = {}
+                if outputs.past_key_values is not None:
+                    for layer_idx, layer_state in enumerate(outputs.past_key_values):
+                        if layers is not None and layer_idx not in layers:
+                            continue
+                        if layer_state is not None and "recurrent_state" in layer_state:
+                            position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
+
+                states_by_position[pos] = position_states
+
+        if self.verbose:
+            num_layers = len(states_by_position.get(1, {}))
+            print(f"Extracted states for {seq_len} positions, {num_layers} layers each")
+
+        return states_by_position
+
+    def extract_incremental_states_single_pass(
         self,
         input_ids: torch.Tensor,
         layers: Optional[List[int]] = None,
@@ -62,267 +110,6 @@ class RetNetStateExtractor:
         if self.verbose:
             num_layers = len(states_by_position.get(1, {}))
             print(f"Extracted states for {seq_len} positions, {num_layers} layers each")
-
-        return states_by_position
-
-    def extract_states(self, input_ids: torch.Tensor, use_cache: bool = True) -> Dict[int, torch.Tensor]:
-        states = {}
-
-        with torch.no_grad():
-            outputs = self.model(input_ids, use_cache=use_cache)
-
-            if outputs.past_key_values is not None:
-                for layer_idx, layer_state in enumerate(outputs.past_key_values):
-                    if layer_state is not None and "recurrent_state" in layer_state:
-                        states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
-
-        if len(states) == 0:
-            warnings.warn("No states were captured! Check that use_cache=True and model supports caching.")
-
-        return states
-
-    def extract_states_incremental(
-        self,
-        input_ids: torch.Tensor,
-        layers: Optional[List[int]] = None,
-    ) -> Dict[int, Dict[int, torch.Tensor]]:
-        seq_len = input_ids.shape[1]
-        states_by_position = {}
-
-        if self.verbose:
-            print(f"Extracting states incrementally for {seq_len} positions...")
-
-        with torch.no_grad():
-            for pos in range(1, seq_len + 1):
-                partial_ids = input_ids[:, :pos].contiguous()
-                outputs = self.model(partial_ids, use_cache=True)
-
-                position_states = {}
-                if outputs.past_key_values is not None:
-                    for layer_idx, layer_state in enumerate(outputs.past_key_values):
-                        if layers is not None and layer_idx not in layers:
-                            continue
-                        if layer_state is not None and "recurrent_state" in layer_state:
-                            position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
-
-                states_by_position[pos] = position_states
-
-                if self.verbose and pos % 10 == 0:
-                    print(f"  Position {pos}/{seq_len}")
-
-        if self.verbose:
-            num_layers = len(states_by_position.get(1, {}))
-            print(f"Extracted states for {seq_len} positions, {num_layers} layers each")
-
-        return states_by_position
-
-    def extract_states_at_positions(
-        self,
-        input_ids: torch.Tensor,
-        positions: List[int],
-        layers: Optional[List[int]] = None,
-    ) -> Dict[int, Dict[int, torch.Tensor]]:
-        seq_len = input_ids.shape[1]
-        states_by_position = {}
-
-        positions = sorted(set(positions))
-        for pos in positions:
-            if pos < 1 or pos > seq_len:
-                warnings.warn(f"Position {pos} out of range [1, {seq_len}], skipping")
-                continue
-
-        if self.verbose:
-            print(f"Extracting states at positions: {positions}")
-
-        with torch.no_grad():
-            for pos in positions:
-                if pos < 1 or pos > seq_len:
-                    continue
-
-                partial_ids = input_ids[:, :pos]
-                outputs = self.model(partial_ids, use_cache=True)
-
-                position_states = {}
-                if outputs.past_key_values is not None:
-                    for layer_idx, layer_state in enumerate(outputs.past_key_values):
-                        if layers is not None and layer_idx not in layers:
-                            continue
-                        if layer_state is not None and "recurrent_state" in layer_state:
-                            position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
-
-                states_by_position[pos] = position_states
-
-        if self.verbose:
-            num_layers = len(states_by_position.get(positions[0], {})) if positions else 0
-            print(f"Extracted states for {len(states_by_position)} positions, {num_layers} layers each")
-
-        return states_by_position
-
-    def extract_states_at_positions_single_pass(
-        self,
-        input_ids: torch.Tensor,
-        positions: List[int],
-        layers: Optional[List[int]] = None,
-    ) -> Dict[int, Dict[int, torch.Tensor]]:
-        seq_len = input_ids.shape[1]
-        states_by_position = {}
-
-        positions = sorted(set(p for p in positions if 1 <= p <= seq_len))
-        position_set = set(positions)
-
-        if not positions:
-            return states_by_position
-
-        if self.verbose:
-            print(f"Extracting states at {len(positions)} positions (single-pass)...")
-
-        with torch.no_grad():
-            past_key_values = None
-
-            for pos in range(seq_len):
-                if pos == 0:
-                    current_ids = input_ids[:, :1]
-                else:
-                    current_ids = input_ids[:, pos : pos + 1]
-
-                outputs = self.model(
-                    current_ids,
-                    past_key_values=past_key_values,
-                    use_cache=True,
-                )
-
-                current_position = pos + 1
-                if current_position in position_set:
-                    position_states = {}
-                    if outputs.past_key_values is not None:
-                        for layer_idx, layer_state in enumerate(outputs.past_key_values):
-                            if layers is not None and layer_idx not in layers:
-                                continue
-                            if layer_state is not None and "recurrent_state" in layer_state:
-                                position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu().clone()
-
-                    states_by_position[current_position] = position_states
-
-                past_key_values = copy.deepcopy(outputs.past_key_values)
-
-                if current_position > max(positions):
-                    break
-
-        if self.verbose:
-            num_layers = len(states_by_position.get(positions[0], {})) if positions else 0
-            print(f"Extracted states for {len(states_by_position)} positions, {num_layers} layers each")
-
-        return states_by_position
-
-    def extract_states_via_hooks(
-        self,
-        input_ids: torch.Tensor,
-    ) -> Dict[int, Dict[int, torch.Tensor]]:
-        """
-        Extracts states by hooking into the model's forward pass and manually computing
-        the recurrent state update. This avoids the O(N^2) cost of incremental extraction
-        and ensures consistency with the model's internal logic.
-        """
-        seq_len = input_ids.shape[1]
-        batch_size = input_ids.shape[0]
-
-        # 1. Identify layers
-        if hasattr(self.model, "layers"):
-            layers = self.model.layers
-        elif hasattr(self.model, "model") and hasattr(self.model.model, "layers"):
-            layers = self.model.model.layers
-        elif hasattr(self.model, "decoder") and hasattr(self.model.decoder, "layers"):
-            layers = self.model.decoder.layers
-        else:
-            raise ValueError("Could not find layers in model")
-
-        # Storage for captured tensors
-        captured_data = {i: {} for i in range(len(layers))}
-        hooks = []
-
-        def get_rotary_hook(layer_idx):
-            def hook(module, args, output):
-                # output of rotary is (q, k) -> we only need k
-                _, k = output
-                captured_data[layer_idx]["k"] = k.detach().cpu()
-
-            return hook
-
-        def get_v_proj_hook(layer_idx):
-            def hook(module, args, output):
-                # output of v_proj is v (before rearrange)
-                v = output
-                captured_data[layer_idx]["v_raw"] = v.detach().cpu()
-
-            return hook
-
-        # 2. Register hooks
-        if self.verbose:
-            print(f"Registering hooks on {len(layers)} layers...")
-        for i, layer in enumerate(layers):
-            if hasattr(layer, "attn"):
-                attn = layer.attn
-                if hasattr(attn, "rotary"):
-                    hooks.append(attn.rotary.register_forward_hook(get_rotary_hook(i)))
-                if hasattr(attn, "v_proj"):
-                    hooks.append(attn.v_proj.register_forward_hook(get_v_proj_hook(i)))
-
-        # 3. Run Forward Pass
-        if self.verbose:
-            print(f"Running forward pass for {seq_len} tokens...")
-        with torch.no_grad():
-            self.model(input_ids, use_cache=False)
-
-        # 4. Remove hooks
-        for h in hooks:
-            h.remove()
-
-        # 5. Compute States Manually
-        if self.verbose:
-            print("Computing states from captured K, V...")
-
-        states_by_position = {pos: {} for pos in range(1, seq_len + 1)}
-
-        for i, layer in enumerate(layers):
-            attn = layer.attn
-            num_heads = attn.num_heads
-            head_v_dim = attn.value_dim // num_heads
-
-            k = captured_data[i].get("k")  # [B, T, H, Dk]
-            v_raw = captured_data[i].get("v_raw")  # [B, T, Dv]
-
-            if k is None or v_raw is None:
-                continue
-
-            # Reshape V: [B, T, Dv] -> [B, T, H, Dv_h]
-            if hasattr(attn, "head_v_dim"):
-                head_v_dim = attn.head_v_dim
-            v = v_raw.view(batch_size, seq_len, num_heads, head_v_dim)
-
-            # Calculate Gamma (Decay) per head
-            # gamma_h = 1 - 2^(-5 - h)
-            indices = torch.arange(num_heads, dtype=torch.float64)
-            gamma = 1.0 - 2.0 ** (-5.0 - indices)
-            gamma = gamma.view(1, num_heads, 1, 1)
-
-            # Initialize state [B, H, K, V]
-            head_k_dim = k.shape[-1]
-            current_state = torch.zeros(batch_size, num_heads, head_k_dim, head_v_dim, dtype=torch.float64)
-
-            # Accumulate
-            k = k.double()
-            v = v.double()
-
-            for t in range(seq_len):
-                k_t = k[:, t, :, :].unsqueeze(-1)  # [B, H, Dk, 1]
-                v_t = v[:, t, :, :].unsqueeze(-2)  # [B, H, 1, Dv]
-                kv_t = torch.matmul(k_t, v_t)  # [B, H, Dk, Dv]
-
-                current_state = current_state * gamma + kv_t
-                states_by_position[t + 1][i] = current_state.float().clone()
-
-        if self.verbose:
-            print("State extraction complete.")
 
         return states_by_position
 
@@ -377,29 +164,3 @@ def load_states_from_file(filepath: str) -> Dict[int, np.ndarray]:
 
     else:
         raise ValueError(f"Unsupported file extension: {ext}. Use .npz or .h5")
-
-
-if __name__ == "__main__":
-    from models.load_retnet import load_retnet_model
-
-    print("Loading model...")
-    model, tokenizer = load_retnet_model(device="cuda")
-
-    print("\nCreating state extractor...")
-    extractor = RetNetStateExtractor(model, verbose=True)
-
-    print("\nRunning inference...")
-    text = "The quick brown fox jumps over the lazy dog."
-    input_ids = tokenizer(text, return_tensors="pt").input_ids.to(model.device)
-
-    states = extractor.extract_states(input_ids)
-
-    print(f"\n=== Extracted States ===")
-    for layer_idx, state in states.items():
-        print(f"Layer {layer_idx}: shape = {state.shape}, dtype = {state.dtype}")
-
-    print("\nSaving states...")
-    save_states_to_file(states, "test_states.npz")
-
-    print("\nLoading states...")
-    loaded_states = load_states_from_file("test_states.npz")
