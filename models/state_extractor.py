@@ -1,4 +1,5 @@
 import os
+import copy
 import torch
 import torch.nn as nn
 from typing import Dict, List, Optional
@@ -23,13 +24,6 @@ class RetNetStateExtractor:
         input_ids: torch.Tensor,
         layers: Optional[List[int]] = None,
     ) -> Dict[int, Dict[int, torch.Tensor]]:
-        """
-        Extract intermediate states at every position in a single efficient pass.
-        Uses incremental processing with caching - O(N) forward passes of single tokens
-        instead of O(N^2) work from running full prefixes.
-
-        Returns: Dict[position, Dict[layer_idx, state_tensor]]
-        """
         seq_len = input_ids.shape[1]
         states_by_position = {}
 
@@ -50,17 +44,17 @@ class RetNetStateExtractor:
                     past_key_values=past_key_values,
                     use_cache=True,
                 )
-                past_key_values = outputs.past_key_values
 
                 position_states = {}
-                if past_key_values is not None:
-                    for layer_idx, layer_state in enumerate(past_key_values):
+                if outputs.past_key_values is not None:
+                    for layer_idx, layer_state in enumerate(outputs.past_key_values):
                         if layers is not None and layer_idx not in layers:
                             continue
                         if layer_state is not None and "recurrent_state" in layer_state:
                             position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu().clone()
 
                 states_by_position[pos + 1] = position_states
+                past_key_values = copy.deepcopy(outputs.past_key_values)
 
                 if self.verbose and (pos + 1) % 50 == 0:
                     print(f"  Position {pos + 1}/{seq_len}")
@@ -170,10 +164,6 @@ class RetNetStateExtractor:
         positions: List[int],
         layers: Optional[List[int]] = None,
     ) -> Dict[int, Dict[int, torch.Tensor]]:
-        """
-        Efficiently extract states at specific positions using single-pass incremental processing.
-        Only stores states at the requested positions to save memory.
-        """
         seq_len = input_ids.shape[1]
         states_by_position = {}
 
@@ -200,19 +190,20 @@ class RetNetStateExtractor:
                     past_key_values=past_key_values,
                     use_cache=True,
                 )
-                past_key_values = outputs.past_key_values
 
                 current_position = pos + 1
                 if current_position in position_set:
                     position_states = {}
-                    if past_key_values is not None:
-                        for layer_idx, layer_state in enumerate(past_key_values):
+                    if outputs.past_key_values is not None:
+                        for layer_idx, layer_state in enumerate(outputs.past_key_values):
                             if layers is not None and layer_idx not in layers:
                                 continue
                             if layer_state is not None and "recurrent_state" in layer_state:
                                 position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu().clone()
 
                     states_by_position[current_position] = position_states
+
+                past_key_values = copy.deepcopy(outputs.past_key_values)
 
                 if current_position > max(positions):
                     break
