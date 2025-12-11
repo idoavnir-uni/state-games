@@ -61,16 +61,17 @@ past_key_values.update(
 For RetNet-2.7B, the actual extracted shape is:
 
 ```python
-recurrent_state.shape = [batch, sequence_length, state_dim]
-                      = [1, 13, 2560]
+recurrent_state.shape = [batch, num_heads, head_dim, state_size]
+                      = [1, 10, 256, 512]
 ```
 
 Where:
 - `batch` = 1 (batch size)
-- `sequence_length` = 13 (number of tokens in input)
-- `state_dim` = 2560 (compressed state dimension)
+- `num_heads` = 10 (number of retention heads)
+- `head_dim` = 256 (query/output dimension per head)
+- `state_size` = 512 (key dimension for the K⊗V outer product)
 
-The state stores information **per position** in the sequence, not just a single accumulated state. Each position has its own 2560-dimensional state vector representing the accumulated K⊗V memory up to that point.
+The state is the **final accumulated K⊗V matrix** after processing all input tokens. This is a single state per layer representing the complete memory, not per-position states.
 
 ## Our Extraction Code
 
@@ -89,27 +90,52 @@ for layer_idx, layer_state in enumerate(past_kv):
 
 ## What We Get
 
-Running `extractor.extract_states(input_ids)` with sequence length N=13 returns:
+Running `extractor.extract_states(input_ids)` returns:
 
 ```python
 {
-    0: tensor[1, 13, 2560],  # Layer 0 states (one per position)
-    1: tensor[1, 13, 2560],  # Layer 1 states
+    0: tensor[1, 10, 256, 512],  # Layer 0 final state
+    1: tensor[1, 10, 256, 512],  # Layer 1 final state
     ...
-    31: tensor[1, 13, 2560]  # Layer 31 states
+    31: tensor[1, 10, 256, 512]  # Layer 31 final state
 }
 ```
 
-Each state contains the accumulated K⊗V memory **at each position** in the sequence:
-- `state[0, 0, :]` = memory after token 1
-- `state[0, 1, :]` = memory after tokens 1-2
-- `state[0, 12, :]` = memory after all 13 tokens
+Each state is the **final accumulated K⊗V matrix** after processing all input tokens:
+- `state[0, h, :, :]` = accumulated memory matrix for head h (shape [256, 512])
+- This represents the complete memory that queries can retrieve from
+- To get intermediate states, run the model multiple times with different sequence lengths
 
 ## Key Points
 
-1. **One state per layer** - 32 independent recurrent states
-2. **States per position** - Each position has accumulated memory from all previous tokens
-3. **Exponentially decayed** - Recent tokens weighted more heavily via γ decay
-4. **Before query multiplication** - Raw memory, not attention output
-5. **Position-wise extraction** - We get states at all positions [0..N-1], not just the final one
+1. **One state per layer** - 32 independent recurrent states (one per layer)
+2. **Per-head structure** - Each layer has 10 heads with separate states
+3. **K⊗V matrix format** - Shape [head_dim, state_size] = [256, 512] per head
+4. **Exponentially decayed** - Recent tokens weighted more heavily via γ decay
+5. **Final accumulated state** - Single state after all tokens, not per-position states
+6. **Incremental extraction** - Use `extract_states_incremental()` to get states at each position
+
+## Extraction Methods
+
+### `extract_states(input_ids)`
+Returns the final K⊗V state after processing all tokens.
+```python
+states = extractor.extract_states(input_ids)
+# Returns: {layer_idx: tensor[batch, heads, head_dim, state_size]}
+```
+
+### `extract_states_incremental(input_ids, layers=None)`
+Returns K⊗V states at each token position (runs model N times for N tokens).
+```python
+states_by_pos = extractor.extract_states_incremental(input_ids)
+# Returns: {position: {layer_idx: tensor[batch, heads, head_dim, state_size]}}
+# position is 1-indexed (1 = after first token)
+```
+
+### `extract_states_at_positions(input_ids, positions, layers=None)`
+Returns K⊗V states at specific positions only (more efficient for sparse extraction).
+```python
+states_by_pos = extractor.extract_states_at_positions(input_ids, positions=[1, 5, 10])
+# Returns: {position: {layer_idx: tensor[batch, heads, head_dim, state_size]}}
+```
 
