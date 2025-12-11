@@ -94,7 +94,7 @@ class RetNetStateExtractor:
 
         with torch.no_grad():
             for pos in range(1, seq_len + 1):
-                partial_ids = input_ids[:, :pos]
+                partial_ids = input_ids[:, :pos].contiguous()
                 outputs = self.model(partial_ids, use_cache=True)
 
                 position_states = {}
@@ -211,6 +211,118 @@ class RetNetStateExtractor:
         if self.verbose:
             num_layers = len(states_by_position.get(positions[0], {})) if positions else 0
             print(f"Extracted states for {len(states_by_position)} positions, {num_layers} layers each")
+
+        return states_by_position
+
+    def extract_states_via_hooks(
+        self,
+        input_ids: torch.Tensor,
+    ) -> Dict[int, Dict[int, torch.Tensor]]:
+        """
+        Extracts states by hooking into the model's forward pass and manually computing
+        the recurrent state update. This avoids the O(N^2) cost of incremental extraction
+        and ensures consistency with the model's internal logic.
+        """
+        seq_len = input_ids.shape[1]
+        batch_size = input_ids.shape[0]
+
+        # 1. Identify layers
+        if hasattr(self.model, "layers"):
+            layers = self.model.layers
+        elif hasattr(self.model, "model") and hasattr(self.model.model, "layers"):
+            layers = self.model.model.layers
+        elif hasattr(self.model, "decoder") and hasattr(self.model.decoder, "layers"):
+            layers = self.model.decoder.layers
+        else:
+            raise ValueError("Could not find layers in model")
+
+        # Storage for captured tensors
+        captured_data = {i: {} for i in range(len(layers))}
+        hooks = []
+
+        def get_rotary_hook(layer_idx):
+            def hook(module, args, output):
+                # output of rotary is (q, k) -> we only need k
+                _, k = output
+                captured_data[layer_idx]["k"] = k.detach().cpu()
+
+            return hook
+
+        def get_v_proj_hook(layer_idx):
+            def hook(module, args, output):
+                # output of v_proj is v (before rearrange)
+                v = output
+                captured_data[layer_idx]["v_raw"] = v.detach().cpu()
+
+            return hook
+
+        # 2. Register hooks
+        if self.verbose:
+            print(f"Registering hooks on {len(layers)} layers...")
+        for i, layer in enumerate(layers):
+            if hasattr(layer, "attn"):
+                attn = layer.attn
+                if hasattr(attn, "rotary"):
+                    hooks.append(attn.rotary.register_forward_hook(get_rotary_hook(i)))
+                if hasattr(attn, "v_proj"):
+                    hooks.append(attn.v_proj.register_forward_hook(get_v_proj_hook(i)))
+
+        # 3. Run Forward Pass
+        if self.verbose:
+            print(f"Running forward pass for {seq_len} tokens...")
+        with torch.no_grad():
+            self.model(input_ids, use_cache=False)
+
+        # 4. Remove hooks
+        for h in hooks:
+            h.remove()
+
+        # 5. Compute States Manually
+        if self.verbose:
+            print("Computing states from captured K, V...")
+
+        states_by_position = {pos: {} for pos in range(1, seq_len + 1)}
+
+        for i, layer in enumerate(layers):
+            attn = layer.attn
+            num_heads = attn.num_heads
+            head_v_dim = attn.value_dim // num_heads
+
+            k = captured_data[i].get("k")  # [B, T, H, Dk]
+            v_raw = captured_data[i].get("v_raw")  # [B, T, Dv]
+
+            if k is None or v_raw is None:
+                continue
+
+            # Reshape V: [B, T, Dv] -> [B, T, H, Dv_h]
+            if hasattr(attn, "head_v_dim"):
+                head_v_dim = attn.head_v_dim
+            v = v_raw.view(batch_size, seq_len, num_heads, head_v_dim)
+
+            # Calculate Gamma (Decay) per head
+            # gamma_h = 1 - 2^(-5 - h)
+            indices = torch.arange(num_heads, dtype=torch.float64)
+            gamma = 1.0 - 2.0 ** (-5.0 - indices)
+            gamma = gamma.view(1, num_heads, 1, 1)
+
+            # Initialize state [B, H, K, V]
+            head_k_dim = k.shape[-1]
+            current_state = torch.zeros(batch_size, num_heads, head_k_dim, head_v_dim, dtype=torch.float64)
+
+            # Accumulate
+            k = k.double()
+            v = v.double()
+
+            for t in range(seq_len):
+                k_t = k[:, t, :, :].unsqueeze(-1)  # [B, H, Dk, 1]
+                v_t = v[:, t, :, :].unsqueeze(-2)  # [B, H, 1, Dv]
+                kv_t = torch.matmul(k_t, v_t)  # [B, H, Dk, Dv]
+
+                current_state = current_state * gamma + kv_t
+                states_by_position[t + 1][i] = current_state.float().clone()
+
+        if self.verbose:
+            print("State extraction complete.")
 
         return states_by_position
 
