@@ -18,6 +18,59 @@ class RetNetStateExtractor:
         self.model = model
         self.verbose = verbose
 
+    def extract_states_single_pass(
+        self,
+        input_ids: torch.Tensor,
+        layers: Optional[List[int]] = None,
+    ) -> Dict[int, Dict[int, torch.Tensor]]:
+        """
+        Extract intermediate states at every position in a single efficient pass.
+        Uses incremental processing with caching - O(N) forward passes of single tokens
+        instead of O(N^2) work from running full prefixes.
+
+        Returns: Dict[position, Dict[layer_idx, state_tensor]]
+        """
+        seq_len = input_ids.shape[1]
+        states_by_position = {}
+
+        if self.verbose:
+            print(f"Extracting states (single-pass) for {seq_len} positions...")
+
+        with torch.no_grad():
+            past_key_values = None
+
+            for pos in range(seq_len):
+                if pos == 0:
+                    current_ids = input_ids[:, :1]
+                else:
+                    current_ids = input_ids[:, pos : pos + 1]
+
+                outputs = self.model(
+                    current_ids,
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                )
+                past_key_values = outputs.past_key_values
+
+                position_states = {}
+                if past_key_values is not None:
+                    for layer_idx, layer_state in enumerate(past_key_values):
+                        if layers is not None and layer_idx not in layers:
+                            continue
+                        if layer_state is not None and "recurrent_state" in layer_state:
+                            position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu().clone()
+
+                states_by_position[pos + 1] = position_states
+
+                if self.verbose and (pos + 1) % 50 == 0:
+                    print(f"  Position {pos + 1}/{seq_len}")
+
+        if self.verbose:
+            num_layers = len(states_by_position.get(1, {}))
+            print(f"Extracted states for {seq_len} positions, {num_layers} layers each")
+
+        return states_by_position
+
     def extract_states(self, input_ids: torch.Tensor, use_cache: bool = True) -> Dict[int, torch.Tensor]:
         states = {}
 
@@ -104,6 +157,65 @@ class RetNetStateExtractor:
                             position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
 
                 states_by_position[pos] = position_states
+
+        if self.verbose:
+            num_layers = len(states_by_position.get(positions[0], {})) if positions else 0
+            print(f"Extracted states for {len(states_by_position)} positions, {num_layers} layers each")
+
+        return states_by_position
+
+    def extract_states_at_positions_single_pass(
+        self,
+        input_ids: torch.Tensor,
+        positions: List[int],
+        layers: Optional[List[int]] = None,
+    ) -> Dict[int, Dict[int, torch.Tensor]]:
+        """
+        Efficiently extract states at specific positions using single-pass incremental processing.
+        Only stores states at the requested positions to save memory.
+        """
+        seq_len = input_ids.shape[1]
+        states_by_position = {}
+
+        positions = sorted(set(p for p in positions if 1 <= p <= seq_len))
+        position_set = set(positions)
+
+        if not positions:
+            return states_by_position
+
+        if self.verbose:
+            print(f"Extracting states at {len(positions)} positions (single-pass)...")
+
+        with torch.no_grad():
+            past_key_values = None
+
+            for pos in range(seq_len):
+                if pos == 0:
+                    current_ids = input_ids[:, :1]
+                else:
+                    current_ids = input_ids[:, pos : pos + 1]
+
+                outputs = self.model(
+                    current_ids,
+                    past_key_values=past_key_values,
+                    use_cache=True,
+                )
+                past_key_values = outputs.past_key_values
+
+                current_position = pos + 1
+                if current_position in position_set:
+                    position_states = {}
+                    if past_key_values is not None:
+                        for layer_idx, layer_state in enumerate(past_key_values):
+                            if layers is not None and layer_idx not in layers:
+                                continue
+                            if layer_state is not None and "recurrent_state" in layer_state:
+                                position_states[layer_idx] = layer_state["recurrent_state"].detach().cpu().clone()
+
+                    states_by_position[current_position] = position_states
+
+                if current_position > max(positions):
+                    break
 
         if self.verbose:
             num_layers = len(states_by_position.get(positions[0], {})) if positions else 0
