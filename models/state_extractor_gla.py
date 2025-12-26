@@ -167,4 +167,3 @@ def load_states_from_file(filepath: str) -> Dict[int, np.ndarray]:
 
     else:
         raise ValueError(f"Unsupported file extension: {ext}. Use .npz or .h5")
-
