@@ -91,6 +91,7 @@ class RetNetStateExtractor:
                     current_ids,
                     past_key_values=past_key_values,
                     use_cache=True,
+                    sequence_offset=pos,
                 )
 
                 position_states = {}
