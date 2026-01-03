@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 from typing import Dict, List, Optional
 import warnings
+from tqdm import tqdm
 
 
 class GLAStateExtractor:
@@ -31,17 +32,22 @@ class GLAStateExtractor:
         self,
         input_ids: torch.Tensor,
         layers: Optional[List[int]] = None,
+        use_tqdm: bool = False,
     ) -> Dict[int, Dict[int, torch.Tensor]]:
         seq_len = input_ids.shape[1]
         states_by_position = {}
 
-        if self.verbose:
+        if self.verbose and not use_tqdm:
             print(f"Extracting states (single-pass) for {seq_len} positions...")
 
         with torch.no_grad():
             past_key_values = None
 
-            for pos in range(seq_len):
+            positions = range(seq_len)
+            if use_tqdm:
+                positions = tqdm(positions, desc="Tokens", leave=False)
+
+            for pos in positions:
                 if pos == 0:
                     current_ids = input_ids[:, :1]
                 else:
@@ -65,10 +71,10 @@ class GLAStateExtractor:
                 states_by_position[pos + 1] = position_states
                 past_key_values = copy.deepcopy(outputs.past_key_values)
 
-                if self.verbose and (pos + 1) % 50 == 0:
+                if self.verbose and not use_tqdm and (pos + 1) % 50 == 0:
                     print(f"  Position {pos + 1}/{seq_len}")
 
-        if self.verbose:
+        if self.verbose and not use_tqdm:
             num_layers = len(states_by_position.get(1, {}))
             print(f"Extracted states for {seq_len} positions, {num_layers} layers each")
 

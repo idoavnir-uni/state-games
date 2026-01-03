@@ -9,6 +9,8 @@ einops
 jupyter
 h5py
 scikit-learn
+git+https://github.com/sustcsonglin/flash-linear-attention.git
+
 
 # Flash Linear Attention library (REQUIRED for RetNet)
 # This library provides the RetNet implementation
