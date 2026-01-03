@@ -1,15 +1,16 @@
 # %% [markdown]
-# # State Probing Experiment - Lady Gaga (GPU 6)
+# # State Probing with Unembedding Matrix
 # 
 # This notebook:
-# 1. Generates favorite color sentences with a fixed entity (Lady Gaga)
+# 1. Generates favorite color sentences with a fixed entity
 # 2. Extracts GLA model states at the final token position
-# 3. Trains linear probes on each layer/head to predict the target color
+# 3. Uses learned w_left + model's unembedding matrix to predict colors
 # 
-# **Probe model:** logits = (w_left @ state) @ W_right
+# **Probe model:** logits = (w_left @ state) @ W_unembed[:, color_tokens]
 # - state: (256, 512) per head
 # - w_left: (256,) learned vector → projects to (512,)
-# - W_right: (512, n_colors) learned matrix → n_colors color logits
+# - W_unembed: model's unembedding matrix (hidden_size, vocab_size)
+# - We only look at logits for color tokens
 
 # %%
 import sys
@@ -19,7 +20,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -60,11 +61,11 @@ extractor = GLAStateExtractor(model, verbose=False)
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 1000
+DATASET_SIZE = 2000
 N_ENTITIES = 10
 N_COLORS = 10
 
-FIXED_ENTITY = "Yuval Milo"
+FIXED_ENTITY = "Lady Gaga"
 
 print(f"Creating dataset with {DATASET_SIZE} samples...")
 dataset = FavoriteColorDataset(
@@ -78,6 +79,35 @@ dataset = FavoriteColorDataset(
 print(f"Dataset created with {len(dataset)} samples")
 print(f"Fixed entity: {dataset.fixed_entity_name}")
 print(f"Colors used: {dataset.colors}")
+
+# %% [markdown]
+# ## 3.1 Verify Colors are Single Tokens
+
+# %%
+print("\nVerifying colors are single tokens...")
+color_token_ids = {}
+all_single_tokens = True
+
+for color in dataset.colors:
+    tokens = tokenizer.encode(color, add_special_tokens=False)
+    is_single = len(tokens) == 1
+    
+    if is_single:
+        color_token_ids[color] = tokens[0]
+        token_str = tokenizer.decode(tokens[0])
+        print(f"  {color}: token_id={tokens[0]}, decoded='{token_str}' ✓")
+    else:
+        all_single_tokens = False
+        decoded = [tokenizer.decode(t) for t in tokens]
+        print(f"  {color}: {len(tokens)} tokens {tokens} -> {decoded} ✗")
+
+if all_single_tokens:
+    print("\n✓ All colors are single tokens!")
+else:
+    print("\n✗ Some colors are NOT single tokens. Need to filter or change colors.")
+    raise ValueError("Not all colors are single tokens")
+
+COLOR_TOKEN_IDS = torch.tensor([color_token_ids[c] for c in dataset.colors])
 
 # %% [markdown]
 # ## 4. Extract States and Build Dataframe
@@ -127,12 +157,13 @@ print(f"Total samples: {len(df)}")
 print(f"Color distribution:\n{df['target_color'].value_counts()}")
 
 # %% [markdown]
-# ## 6. Train Linear Probe on States
+# ## 6. Train Linear Probe with Unembedding Matrix
 # 
-# Model: logits = (w_left @ state) @ W_right
+# Model: logits = (w_left @ state) @ W_unembed[:, color_token_ids]
 # - state: (256, 512)
-# - w_left: (256,) vector → w_left @ state = (512,)
-# - W_right: (512, n_colors) matrix → (512,) @ (512, n_colors) = (n_colors,)
+# - w_left: (256,) learned vector → w_left @ state = (512,)
+# - W_unembed: model's lm_head.weight (vocab_size, hidden_size)
+# - We only look at logits for color token IDs
 
 # %%
 import torch.nn as nn
@@ -145,87 +176,132 @@ n_colors = len(dataset.colors)
 
 print(f"Color mapping: {COLOR_TO_IDX}")
 
-# %%
-class StateProbe(nn.Module):
-    def __init__(self, n_classes):
-        super().__init__()
-        self.w_left = nn.Parameter(torch.randn(256) * 0.01)
-        self.W_right = nn.Linear(512, n_classes)
-    
-    def forward(self, state):
-        # state: (batch, 256, 512)
-        hidden = torch.einsum('d,bdk->bk', self.w_left, state)  # (batch, 512)
-        logits = self.W_right(hidden)  # (batch, n_classes)
-        return logits
+# Get unembedding matrix from model
+lm_head = model.lm_head.weight.detach()  # (vocab_size, hidden_size)
+hidden_size = lm_head.shape[1]
+num_heads = config.get('num_heads')  # 4 heads
+head_dim = 512  # value dim per head
+
+print(f"LM head shape: {lm_head.shape}")
+print(f"Model hidden size: {hidden_size}")
+print(f"Num heads: {num_heads}, head dim: {head_dim}")
+
+# Extract only the rows for color tokens (convert to float32)
+color_unembed = lm_head[COLOR_TOKEN_IDS].float().to(device)  # (n_colors, hidden_size)
+print(f"Color unembedding shape: {color_unembed.shape}")
 
 # %%
-def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
-    states = torch.tensor(states_np[:, layer_idx, head_idx], dtype=torch.float32)
+def get_head_o_proj(model, layer_idx, head_idx, head_dim=512, hidden_size=2048):
+    """Extract the output projection weights for a specific head from a layer."""
+    # o_proj.weight is (hidden_size, hidden_size) = (2048, 2048)
+    # It projects from concatenated head outputs to hidden
+    # For head i, input is positions [i*head_dim : (i+1)*head_dim]
+    o_proj = model.model.layers[layer_idx].attn.o_proj.weight.detach().float()  # (2048, 2048)
+    # Extract the columns corresponding to this head
+    start_idx = head_idx * head_dim
+    end_idx = (head_idx + 1) * head_dim
+    head_o_proj = o_proj[:, start_idx:end_idx]  # (2048, 512)
+    return head_o_proj
+
+# %%
+def precompute_transformed_states(states, head_o_proj, color_unembed):
+    """
+    Precompute A = states @ head_o_proj.T @ color_unembed.T
+    
+    states: (batch, 256, 512)
+    head_o_proj: (2048, 512) 
+    color_unembed: (n_colors, 2048)
+    
+    Returns A: (batch, 256, n_colors)
+    """
+    # states @ head_o_proj.T: (batch, 256, 512) @ (512, 2048) -> (batch, 256, 2048)
+    intermediate = torch.einsum('bdk,hk->bdh', states, head_o_proj)  # (batch, 256, 2048)
+    # @ color_unembed.T: (batch, 256, 2048) @ (2048, n_colors) -> (batch, 256, n_colors)
+    A = torch.einsum('bdh,ch->bdc', intermediate, color_unembed)  # (batch, 256, n_colors)
+    return A
+
+def solve_w_left_closed_form(A, labels, n_colors):
+    """
+    Solve for w_left in closed form using least squares.
+    
+    A: (batch, 256, n_colors) - transformed states
+    labels: (batch,) - class indices
+    
+    We want: logits = einsum('d, bdc -> bc', w_left, A) ≈ one_hot(labels)
+    """
+    batch_size = A.shape[0]
+    
+    # Create one-hot targets
+    Y = torch.zeros(batch_size, n_colors, device=A.device)
+    Y.scatter_(1, labels.unsqueeze(1), 1.0)  # (batch, n_colors)
+    
+    # Reshape for least squares: A_flat @ w_left = Y_flat
+    # A_flat: (batch * n_colors, 256)
+    # Y_flat: (batch * n_colors,)
+    A_flat = A.permute(0, 2, 1).reshape(-1, 256)  # (batch * n_colors, 256)
+    Y_flat = Y.reshape(-1)  # (batch * n_colors,)
+    
+    # Solve least squares: w_left = (A^T A)^{-1} A^T Y
+    w_left = torch.linalg.lstsq(A_flat, Y_flat).solution  # (256,)
+    
+    return w_left
+
+def evaluate_w_left(A, labels, w_left):
+    """Compute accuracy given w_left and transformed states A."""
+    # logits = einsum('d, bdc -> bc', w_left, A)
+    logits = torch.einsum('d,bdc->bc', w_left, A)
+    preds = logits.argmax(dim=1)
+    acc = (preds == labels).float().mean().item()
+    return acc
+
+# %%
+def solve_probe(states_np, labels, layer_idx, head_idx):
+    """Solve for w_left in closed form for a given layer/head."""
+    states = torch.tensor(states_np[:, layer_idx, head_idx], dtype=torch.float32).to(device)
     
     n_samples = len(labels)
     n_val = max(1, int(0.3 * n_samples))
     indices = torch.randperm(n_samples)
     
     train_states = states[indices[n_val:]]
-    train_labels = labels[indices[n_val:]]
+    train_labels = labels[indices[n_val:]].to(device)
     val_states = states[indices[:n_val]]
-    val_labels = labels[indices[:n_val]]
+    val_labels = labels[indices[:n_val]].to(device)
     
-    probe = StateProbe(n_colors).to(device)
-    optimizer = optim.Adam(probe.parameters(), lr=1e-3)
-    criterion = nn.CrossEntropyLoss()
+    # Get model weights for this head
+    head_o_proj = get_head_o_proj(model, layer_idx, head_idx).to(device)
     
-    best_val_loss = float('inf')
-    best_val_acc = 0.0
-    patience_counter = 0
+    # Precompute transformed states
+    train_A = precompute_transformed_states(train_states, head_o_proj, color_unembed)
+    val_A = precompute_transformed_states(val_states, head_o_proj, color_unembed)
     
-    for epoch in range(1000):
-        probe.train()
-        optimizer.zero_grad()
-        logits = probe(train_states.to(device))
-        loss = criterion(logits, train_labels.to(device))
-        loss.backward()
-        optimizer.step()
-        
-        probe.eval()
-        with torch.no_grad():
-            val_logits = probe(val_states.to(device))
-            val_loss = criterion(val_logits, val_labels.to(device)).item()
-            val_preds = val_logits.argmax(dim=1)
-            val_acc = (val_preds == val_labels.to(device)).float().mean().item()
-            
-            train_preds = logits.argmax(dim=1)
-            train_acc = (train_preds == train_labels.to(device)).float().mean().item()
-        
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            best_val_acc = val_acc
-            patience_counter = 0
-        else:
-            patience_counter += 1
-        
-        if patience_counter >= patience:
-            break
+    # Solve in closed form
+    w_left = solve_w_left_closed_form(train_A, train_labels, n_colors)
     
-    return best_val_acc, train_acc, epoch + 1
+    # Evaluate
+    train_acc = evaluate_w_left(train_A, train_labels, w_left)
+    val_acc = evaluate_w_left(val_A, val_labels, w_left)
+    
+    return val_acc, train_acc, w_left
 
 # %%
-print("Training probes for each layer/head...")
-print(f"{'Layer':<6} {'Head':<6} {'Val Acc':<10} {'Train Acc':<10} {'Epochs':<8}")
-print("-" * 40)
+print("Solving probes for each layer/head (closed form)...")
+print(f"{'Layer':<6} {'Head':<6} {'Val Acc':<10} {'Train Acc':<10}")
+print("-" * 35)
 
 results = []
+all_w_lefts = {}
 for layer_idx in range(num_layers):
     for head_idx in range(num_heads):
-        val_acc, train_acc, epochs = train_probe(all_states, labels, layer_idx, head_idx)
+        val_acc, train_acc, w_left = solve_probe(all_states, labels, layer_idx, head_idx)
+        all_w_lefts[(layer_idx, head_idx)] = w_left
         results.append({
             'layer': layer_idx,
             'head': head_idx,
             'val_acc': val_acc,
             'train_acc': train_acc,
-            'epochs': epochs
         })
-        print(f"L{layer_idx:<5} H{head_idx:<5} {val_acc:<10.3f} {train_acc:<10.3f} {epochs:<8}")
+        print(f"L{layer_idx:<5} H{head_idx:<5} {val_acc:<10.3f} {train_acc:<10.3f}")
 
 # %%
 results_df = pd.DataFrame(results)
@@ -243,7 +319,7 @@ print(f"\nBest head: Layer {best_layer}, Head {best_head_idx}")
 print(f"Validation accuracy: {best_head['val_acc']:.3f}")
 
 # %%
-RETRAIN_DATASET_SIZE = 10000
+RETRAIN_DATASET_SIZE = 2000  # Same size as original training
 
 print(f"Generating {RETRAIN_DATASET_SIZE} samples for re-training...")
 retrain_dataset = FavoriteColorDataset(
@@ -270,52 +346,37 @@ retrain_labels = torch.tensor([COLOR_TO_IDX[c] for c in retrain_colors])
 retrain_states_tensor = torch.tensor(retrain_states, dtype=torch.float32)
 
 # %%
-print(f"Re-training probe on Layer {best_layer}, Head {best_head_idx} with {RETRAIN_DATASET_SIZE} samples...")
+print(f"Solving probe on Layer {best_layer}, Head {best_head_idx} with {RETRAIN_DATASET_SIZE} samples (closed form)...")
 
 n_samples = RETRAIN_DATASET_SIZE
-n_val = max(1, int(0.1 * n_samples))
+n_val = max(1, int(0.3 * n_samples))  # Same 30% split as original training
 indices = torch.randperm(n_samples)
 
-train_states = retrain_states_tensor[indices[n_val:]]
-train_labels = retrain_labels[indices[n_val:]]
-val_states = retrain_states_tensor[indices[:n_val]]
-val_labels = retrain_labels[indices[:n_val]]
+train_states = retrain_states_tensor[indices[n_val:]].to(device)
+train_labels = retrain_labels[indices[n_val:]].to(device)
+val_states = retrain_states_tensor[indices[:n_val]].to(device)
+val_labels = retrain_labels[indices[:n_val]].to(device)
 
-best_probe = StateProbe(n_colors).to(device)
-optimizer = optim.Adam(best_probe.parameters(), lr=1e-3)
-criterion = nn.CrossEntropyLoss()
+best_head_o_proj = get_head_o_proj(model, best_layer, best_head_idx).to(device)
 
-pbar = tqdm(range(1000), desc="Re-training")
-for epoch in pbar:
-    best_probe.train()
-    optimizer.zero_grad()
-    logits = best_probe(train_states.to(device))
-    loss = criterion(logits, train_labels.to(device))
-    loss.backward()
-    optimizer.step()
-    
-    if epoch % 10 == 0:
-        best_probe.eval()
-        with torch.no_grad():
-            val_logits = best_probe(val_states.to(device))
-            val_loss = criterion(val_logits, val_labels.to(device)).item()
-            train_preds = logits.argmax(dim=1)
-            train_acc = (train_preds == train_labels.to(device)).float().mean().item()
-            val_preds = val_logits.argmax(dim=1)
-            val_acc = (val_preds == val_labels.to(device)).float().mean().item()
-        
-        pbar.set_postfix({
-            'train_loss': f'{loss.item():.4f}',
-            'val_loss': f'{val_loss:.4f}',
-            'train_acc': f'{train_acc:.3f}',
-            'val_acc': f'{val_acc:.3f}'
-        })
+# Precompute transformed states
+train_A = precompute_transformed_states(train_states, best_head_o_proj, color_unembed)
+val_A = precompute_transformed_states(val_states, best_head_o_proj, color_unembed)
 
-print("Best probe re-trained!")
+# Solve in closed form
+best_w_left = solve_w_left_closed_form(train_A, train_labels, n_colors)
+
+# Evaluate
+train_acc = evaluate_w_left(train_A, train_labels, best_w_left)
+val_acc = evaluate_w_left(val_A, val_labels, best_w_left)
+
+print(f"Train accuracy: {train_acc:.3f}")
+print(f"Val accuracy: {val_acc:.3f}")
+print("Best probe solved!")
 
 # %%
-TARGET_EVAL_SAMPLES = 10
-EVAL_N_ENTITIES = 500
+TARGET_EVAL_SAMPLES = 3
+EVAL_N_ENTITIES = 100
 
 print(f"\nGenerating {TARGET_EVAL_SAMPLES} evaluation samples with {FIXED_ENTITY} at sentences 10-20...")
 eval_samples = []
@@ -352,7 +413,6 @@ eval_accuracies_by_position = {}
 
 # Create a quiet extractor for evaluation
 eval_extractor = GLAStateExtractor(model, verbose=False)
-best_probe.eval()
 
 for sample_idx, sample in enumerate(tqdm(eval_samples, desc="Samples")):
     input_ids = sample.input_ids.to(device)
@@ -376,7 +436,9 @@ for sample_idx, sample in enumerate(tqdm(eval_samples, desc="Samples")):
             state_at_pos = incremental_states[pos][best_layer]
             state_tensor = torch.tensor(state_at_pos[0, best_head_idx], dtype=torch.float32).unsqueeze(0).to(device)
             
-            logits = best_probe(state_tensor)
+            # Compute prediction using closed-form w_left and model weights
+            A = precompute_transformed_states(state_tensor, best_head_o_proj, color_unembed)
+            logits = torch.einsum('d,bdc->bc', best_w_left, A)
             pred = logits.argmax(dim=1).item()
             
             is_correct = (pred == true_color_idx)
