@@ -61,7 +61,7 @@ extractor = GLAStateExtractor(model, verbose=False)
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 2000
+DATASET_SIZE = 10000
 N_ENTITIES = 10
 N_COLORS = 10
 
@@ -319,7 +319,7 @@ print(f"\nBest head: Layer {best_layer}, Head {best_head_idx}")
 print(f"Validation accuracy: {best_head['val_acc']:.3f}")
 
 # %%
-RETRAIN_DATASET_SIZE = 2000  # Same size as original training
+RETRAIN_DATASET_SIZE = 10000  # Same size as original training
 
 print(f"Generating {RETRAIN_DATASET_SIZE} samples for re-training...")
 retrain_dataset = FavoriteColorDataset(
@@ -375,8 +375,157 @@ print(f"Val accuracy: {val_acc:.3f}")
 print("Best probe solved!")
 
 # %%
-TARGET_EVAL_SAMPLES = 3
-EVAL_N_ENTITIES = 100
+print("\n=== Visualization: Probe Accuracy Across All Token Positions ===")
+
+# Generate 3 samples with different sentence positions for the information
+print("Generating 3 samples with varied information positions...")
+temp_dataset = FavoriteColorDataset(
+    tokenizer=tokenizer,
+    size=100,
+    n_entities=N_ENTITIES,
+    n_colors=N_COLORS,
+    fixed_entity_name=FIXED_ENTITY,
+    seed=300,
+)
+
+# Collect samples and sort by sentence position
+all_samples = [(s, s.fixed_entity_sentence_number) for s in temp_dataset]
+all_samples.sort(key=lambda x: x[1])
+
+# Pick 3 samples with varied positions (early, middle, late)
+viz_samples = []
+if len(all_samples) >= 3:
+    # Take from early, middle, and late in the sorted list
+    indices = [len(all_samples) // 6, len(all_samples) // 2, 5 * len(all_samples) // 6]
+    for idx in indices:
+        sample, pos = all_samples[idx]
+        viz_samples.append(sample)
+        print(f"  Sample {len(viz_samples)}: Info at sentence {pos}")
+
+print(f"\nExtracting states for all token positions...")
+
+import matplotlib.pyplot as plt
+
+fig, axes = plt.subplots(3, 1, figsize=(14, 10))
+
+for sample_idx, sample in enumerate(viz_samples):
+    print(f"\nProcessing sample {sample_idx + 1}/3...")
+    input_ids = sample.input_ids.to(device)
+    seq_len = input_ids.shape[1]
+    info_idx = sample.fixed_entity_sentence_end_token_idx
+    true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+    
+    # Extract incremental states for all positions
+    incremental_states = extractor.extract_incremental_states_single_pass(
+        input_ids,
+        layers=[best_layer],
+        use_tqdm=False
+    )
+    
+    # Compute accuracy at each position
+    accuracies = []
+    positions = []
+    
+    with torch.no_grad():
+        for pos in range(1, seq_len):
+            if pos not in incremental_states:
+                continue
+            
+            state_at_pos = incremental_states[pos][best_layer]
+            state_tensor = torch.tensor(state_at_pos[0, best_head_idx], dtype=torch.float32).unsqueeze(0).to(device)
+            
+            # Compute prediction
+            A = precompute_transformed_states(state_tensor, best_head_o_proj, color_unembed)
+            logits = torch.einsum('d,bdc->bc', best_w_left, A)
+            pred = logits.argmax(dim=1).item()
+            
+            is_correct = (pred == true_color_idx)
+            accuracies.append(float(is_correct))
+            positions.append(pos)
+    
+    # Plot
+    ax = axes[sample_idx]
+    ax.plot(positions, accuracies, 'b-', linewidth=2, alpha=0.7)
+    ax.axvline(x=info_idx, color='r', linestyle='--', linewidth=2, label=f'Info given (sentence {sample.fixed_entity_sentence_number})')
+    ax.axhline(y=1/n_colors, color='gray', linestyle=':', linewidth=1, alpha=0.5, label=f'Random ({1/n_colors:.2f})')
+    ax.set_xlabel('Token Position')
+    ax.set_ylabel('Correct (1) / Incorrect (0)')
+    ax.set_title(f'Sample {sample_idx + 1}: Color = {sample.fixed_entity_color}, Info at token {info_idx} (sentence {sample.fixed_entity_sentence_number})')
+    ax.set_ylim(-0.1, 1.1)
+    ax.legend(loc='upper left')
+    ax.grid(True, alpha=0.3)
+
+plt.tight_layout()
+plt.savefig('../data/probe_accuracy_all_positions.png', dpi=150)
+plt.show()
+
+print("\nVisualization complete!")
+
+# %%
+print("\n=== Quick Evaluation: Information in Last 10 Sentences ===")
+QUICK_EVAL_SAMPLES = 100
+
+print(f"Generating {QUICK_EVAL_SAMPLES} samples with {FIXED_ENTITY} in last 10 sentences...")
+quick_eval_samples = []
+seed_offset = 200
+
+pbar = tqdm(total=QUICK_EVAL_SAMPLES, desc="Generating samples")
+while len(quick_eval_samples) < QUICK_EVAL_SAMPLES:
+    temp_dataset = FavoriteColorDataset(
+        tokenizer=tokenizer,
+        size=100,
+        n_entities=100,
+        n_colors=N_COLORS,
+        fixed_entity_name=FIXED_ENTITY,
+        seed=seed_offset,
+    )
+    
+    for sample in temp_dataset:
+        total_sentences = sample.text.count('.')
+        if sample.fixed_entity_sentence_number >= total_sentences - 10:
+            quick_eval_samples.append(sample)
+            pbar.update(1)
+            if len(quick_eval_samples) >= QUICK_EVAL_SAMPLES:
+                break
+    
+    seed_offset += 1
+
+pbar.close()
+print(f"Generated {len(quick_eval_samples)} samples")
+
+# Extract final states and compute accuracy
+print("Extracting final states and computing predictions...")
+quick_correct = 0
+quick_total = 0
+
+for sample in tqdm(quick_eval_samples, desc="Evaluating"):
+    input_ids = sample.input_ids.to(device)
+    final_states = extractor.extract_final_states(input_ids)
+    
+    # Get state for best head at final position
+    state = final_states[best_layer][0, best_head_idx].float().unsqueeze(0).to(device)
+    
+    # Compute prediction
+    with torch.no_grad():
+        A = precompute_transformed_states(state, best_head_o_proj, color_unembed)
+        logits = torch.einsum('d,bdc->bc', best_w_left, A)
+        pred = logits.argmax(dim=1).item()
+    
+    true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+    if pred == true_color_idx:
+        quick_correct += 1
+    quick_total += 1
+
+quick_accuracy = quick_correct / quick_total
+print(f"\n{'='*50}")
+print(f"Quick Evaluation Results (Info in Last 10 Sentences):")
+print(f"  Accuracy at final token: {quick_accuracy:.3f} ({quick_correct}/{quick_total})")
+print(f"  Random baseline: {1/n_colors:.3f}")
+print(f"{'='*50}\n")
+
+# %%
+TARGET_EVAL_SAMPLES = 100
+EVAL_N_ENTITIES = 200
 
 print(f"\nGenerating {TARGET_EVAL_SAMPLES} evaluation samples with {FIXED_ENTITY} at sentences 10-20...")
 eval_samples = []
