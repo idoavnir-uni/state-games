@@ -28,6 +28,40 @@ class GLAStateExtractor:
 
         return states
 
+    def extract_final_states_batched(self, input_ids: torch.Tensor, use_cache: bool = True) -> Dict[int, torch.Tensor]:
+        """
+        Extract final recurrent states for a batch of sequences.
+        
+        All sequences must be padded to the same length.
+        Backward compatible: also accepts single sequences (1D or 2D with batch_size=1).
+        
+        Args:
+            input_ids: (batch_size, seq_len) or (seq_len,) - batch or single sequence
+            use_cache: Whether to use caching
+            
+        Returns:
+            Dict[layer_idx, tensor of shape (batch_size, num_heads, 256, 512)]
+        """
+        # Backward compatibility: handle 1D input
+        if input_ids.dim() == 1:
+            input_ids = input_ids.unsqueeze(0)
+        
+        states = {}
+
+        with torch.no_grad():
+            outputs = self.model(input_ids, use_cache=use_cache)
+
+            if outputs.past_key_values is not None:
+                for layer_idx in range(len(outputs.past_key_values)):
+                    layer_state = outputs.past_key_values[layer_idx]
+                    if layer_state is not None and "recurrent_state" in layer_state:
+                        states[layer_idx] = layer_state["recurrent_state"].detach().cpu()
+
+        if len(states) == 0:
+            warnings.warn("No states were captured! Check that use_cache=True and model supports caching.")
+
+        return states
+
     def extract_incremental_states_single_pass(
         self,
         input_ids: torch.Tensor,

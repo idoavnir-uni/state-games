@@ -61,7 +61,7 @@ extractor = GLAStateExtractor(model, verbose=False)
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 10000
+DATASET_SIZE = 2000
 N_ENTITIES = 10
 N_COLORS = 10
 
@@ -319,7 +319,7 @@ print(f"\nBest head: Layer {best_layer}, Head {best_head_idx}")
 print(f"Validation accuracy: {best_head['val_acc']:.3f}")
 
 # %%
-RETRAIN_DATASET_SIZE = 10000  # Same size as original training
+RETRAIN_DATASET_SIZE = 2000  # Same size as original training
 
 print(f"Generating {RETRAIN_DATASET_SIZE} samples for re-training...")
 retrain_dataset = FavoriteColorDataset(
@@ -570,7 +570,7 @@ print(f"  Random baseline (top-3): {3/n_colors:.3f}")
 print(f"{'='*50}\n")
 
 # %%
-TARGET_EVAL_SAMPLES = 100
+TARGET_EVAL_SAMPLES = 5
 EVAL_N_ENTITIES = 500
 
 print(f"\nGenerating {TARGET_EVAL_SAMPLES} evaluation samples with {FIXED_ENTITY} at sentences 10-20...")
