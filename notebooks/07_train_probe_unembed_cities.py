@@ -1,16 +1,16 @@
 # %% [markdown]
-# # State Probing with Unembedding Matrix
+# # State Probing with Unembedding Matrix - Most Hated City
 # 
 # This notebook:
-# 1. Generates favorite color sentences with a fixed entity
+# 1. Generates most hated city sentences with a fixed entity
 # 2. Extracts GLA model states at the final token position
-# 3. Uses learned w_left + model's unembedding matrix to predict colors
+# 3. Uses learned w_left + model's unembedding matrix to predict cities
 # 
-# **Probe model:** logits = (w_left @ state) @ W_unembed[:, color_tokens]
+# **Probe model:** logits = (w_left @ state) @ W_unembed[:, city_tokens]
 # - state: (256, 512) per head
 # - w_left: (256,) learned vector → projects to (512,)
 # - W_unembed: model's unembedding matrix (hidden_size, vocab_size)
-# - We only look at logits for color tokens
+# - We only look at logits for city tokens
 
 # %%
 import sys
@@ -20,13 +20,13 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 sys.path.insert(0, os.path.abspath('..'))
 
 from models.load_gla import load_gla_model, get_model_config
 from models.state_extractor_gla import GLAStateExtractor
-from datasets.favorite_color_dataset import FavoriteColorDataset
+from datasets.most_hated_city_dataset import MostHatedCityDataset
 
 print("Imports complete!")
 print(f"CUDA_VISIBLE_DEVICES set to: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
@@ -58,56 +58,56 @@ print(f"Model loaded: {config.get('num_layers')} layers, {config.get('num_heads'
 extractor = GLAStateExtractor(model, verbose=False)
 
 # %% [markdown]
-# ## 3. Create Favorite Color Dataset
+# ## 3. Create Most Hated City Dataset
 
 # %%
-DATASET_SIZE = 5000
+DATASET_SIZE = 1000
 N_ENTITIES = 10
-N_COLORS = 10
+N_CITIES = 10
 
-FIXED_ENTITY = "Lady Gaga"
+FIXED_ENTITY = "Bat"
 
 print(f"Creating dataset with {DATASET_SIZE} samples...")
-dataset = FavoriteColorDataset(
+dataset = MostHatedCityDataset(
     tokenizer=tokenizer,
     size=DATASET_SIZE,
     n_entities=N_ENTITIES,
-    n_colors=N_COLORS,
+    n_cities=N_CITIES,
     fixed_entity_name=FIXED_ENTITY,
     seed=42,
 )
 print(f"Dataset created with {len(dataset)} samples")
 print(f"Fixed entity: {dataset.fixed_entity_name}")
-print(f"Colors used: {dataset.colors}")
+print(f"Cities used: {dataset.cities}")
 
 # %% [markdown]
-# ## 3.1 Verify Colors are Single Tokens
+# ## 3.1 Verify Cities are Single Tokens
 
 # %%
-print("\nVerifying colors are single tokens...")
-color_token_ids = {}
+print("\nVerifying cities are single tokens...")
+city_token_ids = {}
 all_single_tokens = True
 
-for color in dataset.colors:
-    tokens = tokenizer.encode(color, add_special_tokens=False)
+for city in dataset.cities:
+    tokens = tokenizer.encode(city, add_special_tokens=False)
     is_single = len(tokens) == 1
     
     if is_single:
-        color_token_ids[color] = tokens[0]
+        city_token_ids[city] = tokens[0]
         token_str = tokenizer.decode(tokens[0])
-        print(f"  {color}: token_id={tokens[0]}, decoded='{token_str}' ✓")
+        print(f"  {city}: token_id={tokens[0]}, decoded='{token_str}' ✓")
     else:
         all_single_tokens = False
         decoded = [tokenizer.decode(t) for t in tokens]
-        print(f"  {color}: {len(tokens)} tokens {tokens} -> {decoded} ✗")
+        print(f"  {city}: {len(tokens)} tokens {tokens} -> {decoded} ✗")
 
 if all_single_tokens:
-    print("\n✓ All colors are single tokens!")
+    print("\n✓ All cities are single tokens!")
 else:
-    print("\n✗ Some colors are NOT single tokens. Need to filter or change colors.")
-    raise ValueError("Not all colors are single tokens")
+    print("\n✗ Some cities are NOT single tokens. Need to filter or change cities.")
+    raise ValueError("Not all cities are single tokens")
 
-COLOR_TOKEN_IDS = torch.tensor([color_token_ids[c] for c in dataset.colors])
+CITY_TOKEN_IDS = torch.tensor([city_token_ids[c] for c in dataset.cities])
 
 # %% [markdown]
 # ## 4. Extract States and Build Dataframe
@@ -130,7 +130,7 @@ for idx in tqdm(range(len(dataset)), desc="Processing samples"):
     
     metadata_rows.append({
         'sentence': sample.text,
-        'target_color': sample.fixed_entity_color,
+        'target_city': sample.fixed_entity_city,
         'information_given_idx': sample.fixed_entity_sentence_end_token_idx,
         'sentence_with_info_num': sample.fixed_entity_sentence_number,
     })
@@ -149,32 +149,32 @@ print(f"States array shape: {all_states.shape}")
 # %%
 print("\n=== Sample Entry ===")
 print(f"Sentence: {df.iloc[0]['sentence']}")
-print(f"Target color: {df.iloc[0]['target_color']}")
+print(f"Target city: {df.iloc[0]['target_city']}")
 print(f"States shape: {all_states.shape} = (samples, layers, heads, 256, 512)")
 
 print("\n=== Dataset Statistics ===")
 print(f"Total samples: {len(df)}")
-print(f"Color distribution:\n{df['target_color'].value_counts()}")
+print(f"City distribution:\n{df['target_city'].value_counts()}")
 
 # %% [markdown]
 # ## 6. Train Linear Probe with Unembedding Matrix
 # 
-# Model: logits = (w_left @ state) @ W_unembed[:, color_token_ids]
+# Model: logits = (w_left @ state) @ W_unembed[:, city_token_ids]
 # - state: (256, 512)
 # - w_left: (256,) learned vector → w_left @ state = (512,)
 # - W_unembed: model's lm_head.weight (vocab_size, hidden_size)
-# - We only look at logits for color token IDs
+# - We only look at logits for city token IDs
 
 # %%
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 
-COLOR_TO_IDX = {color: idx for idx, color in enumerate(dataset.colors)}
-labels = torch.tensor([COLOR_TO_IDX[c] for c in df['target_color']])
-n_colors = len(dataset.colors)
+CITY_TO_IDX = {city: idx for idx, city in enumerate(dataset.cities)}
+labels = torch.tensor([CITY_TO_IDX[c] for c in df['target_city']])
+n_cities = len(dataset.cities)
 
-print(f"Color mapping: {COLOR_TO_IDX}")
+print(f"City mapping: {CITY_TO_IDX}")
 
 # Get unembedding matrix from model
 lm_head = model.lm_head.weight.detach()  # (vocab_size, hidden_size)
@@ -186,9 +186,9 @@ print(f"LM head shape: {lm_head.shape}")
 print(f"Model hidden size: {hidden_size}")
 print(f"Num heads: {num_heads}, head dim: {head_dim}")
 
-# Extract only the rows for color tokens (convert to float32)
-color_unembed = lm_head[COLOR_TOKEN_IDS].float().to(device)  # (n_colors, hidden_size)
-print(f"Color unembedding shape: {color_unembed.shape}")
+# Extract only the rows for city tokens (convert to float32)
+city_unembed = lm_head[CITY_TOKEN_IDS].float().to(device)  # (n_cities, hidden_size)
+print(f"City unembedding shape: {city_unembed.shape}")
 
 # %%
 def get_head_o_proj(model, layer_idx, head_idx, head_dim=512, hidden_size=2048):
@@ -203,28 +203,27 @@ def get_head_o_proj(model, layer_idx, head_idx, head_dim=512, hidden_size=2048):
     head_o_proj = o_proj[:, start_idx:end_idx]  # (2048, 512)
     return head_o_proj
 
-# %%
-def precompute_transformed_states(states, head_o_proj, color_unembed):
+def precompute_transformed_states(states, head_o_proj, city_unembed):
     """
-    Precompute A = states @ head_o_proj.T @ color_unembed.T
+    Precompute A = states @ head_o_proj.T @ city_unembed.T
     
     states: (batch, 256, 512)
     head_o_proj: (2048, 512) 
-    color_unembed: (n_colors, 2048)
+    city_unembed: (n_cities, 2048)
     
-    Returns A: (batch, 256, n_colors)
+    Returns A: (batch, 256, n_cities)
     """
     # states @ head_o_proj.T: (batch, 256, 512) @ (512, 2048) -> (batch, 256, 2048)
     intermediate = torch.einsum('bdk,hk->bdh', states, head_o_proj)  # (batch, 256, 2048)
-    # @ color_unembed.T: (batch, 256, 2048) @ (2048, n_colors) -> (batch, 256, n_colors)
-    A = torch.einsum('bdh,ch->bdc', intermediate, color_unembed)  # (batch, 256, n_colors)
+    # @ city_unembed.T: (batch, 256, 2048) @ (2048, n_cities) -> (batch, 256, n_cities)
+    A = torch.einsum('bdh,ch->bdc', intermediate, city_unembed)  # (batch, 256, n_cities)
     return A
 
-def solve_w_left_closed_form(A, labels, n_colors):
+def solve_w_left_closed_form(A, labels, n_cities):
     """
     Solve for w_left in closed form using least squares.
     
-    A: (batch, 256, n_colors) - transformed states
+    A: (batch, 256, n_cities) - transformed states
     labels: (batch,) - class indices
     
     We want: logits = einsum('d, bdc -> bc', w_left, A) ≈ one_hot(labels)
@@ -232,14 +231,14 @@ def solve_w_left_closed_form(A, labels, n_colors):
     batch_size = A.shape[0]
     
     # Create one-hot targets
-    Y = torch.zeros(batch_size, n_colors, device=A.device)
-    Y.scatter_(1, labels.unsqueeze(1), 1.0)  # (batch, n_colors)
+    Y = torch.zeros(batch_size, n_cities, device=A.device)
+    Y.scatter_(1, labels.unsqueeze(1), 1.0)  # (batch, n_cities)
     
     # Reshape for least squares: A_flat @ w_left = Y_flat
-    # A_flat: (batch * n_colors, 256)
-    # Y_flat: (batch * n_colors,)
-    A_flat = A.permute(0, 2, 1).reshape(-1, 256)  # (batch * n_colors, 256)
-    Y_flat = Y.reshape(-1)  # (batch * n_colors,)
+    # A_flat: (batch * n_cities, 256)
+    # Y_flat: (batch * n_cities,)
+    A_flat = A.permute(0, 2, 1).reshape(-1, 256)  # (batch * n_cities, 256)
+    Y_flat = Y.reshape(-1)  # (batch * n_cities,)
     
     # Solve least squares: w_left = (A^T A)^{-1} A^T Y
     w_left = torch.linalg.lstsq(A_flat, Y_flat).solution  # (256,)
@@ -254,7 +253,6 @@ def evaluate_w_left(A, labels, w_left):
     acc = (preds == labels).float().mean().item()
     return acc
 
-# %%
 def solve_probe(states_np, labels, layer_idx, head_idx):
     """Solve for w_left in closed form for a given layer/head."""
     states = torch.tensor(states_np[:, layer_idx, head_idx], dtype=torch.float32).to(device)
@@ -272,11 +270,11 @@ def solve_probe(states_np, labels, layer_idx, head_idx):
     head_o_proj = get_head_o_proj(model, layer_idx, head_idx).to(device)
     
     # Precompute transformed states
-    train_A = precompute_transformed_states(train_states, head_o_proj, color_unembed)
-    val_A = precompute_transformed_states(val_states, head_o_proj, color_unembed)
+    train_A = precompute_transformed_states(train_states, head_o_proj, city_unembed)
+    val_A = precompute_transformed_states(val_states, head_o_proj, city_unembed)
     
     # Solve in closed form
-    w_left = solve_w_left_closed_form(train_A, train_labels, n_colors)
+    w_left = solve_w_left_closed_form(train_A, train_labels, n_cities)
     
     # Evaluate
     train_acc = evaluate_w_left(train_A, train_labels, w_left)
@@ -284,7 +282,6 @@ def solve_probe(states_np, labels, layer_idx, head_idx):
     
     return val_acc, train_acc, w_left
 
-# %%
 print("Solving probes for each layer/head (closed form)...")
 print(f"{'Layer':<6} {'Head':<6} {'Val Acc':<10} {'Train Acc':<10}")
 print("-" * 35)
@@ -303,7 +300,6 @@ for layer_idx in range(num_layers):
         })
         print(f"L{layer_idx:<5} H{head_idx:<5} {val_acc:<10.3f} {train_acc:<10.3f}")
 
-# %%
 results_df = pd.DataFrame(results)
 print("\n=== Best Performing Heads ===")
 print(results_df.sort_values('val_acc', ascending=False).head(10))
@@ -319,37 +315,37 @@ print(f"\nBest head: Layer {best_layer}, Head {best_head_idx}")
 print(f"Validation accuracy: {best_head['val_acc']:.3f}")
 
 # %%
-RETRAIN_DATASET_SIZE = 5000  # Same size as original training
+RETRAIN_DATASET_SIZE = 2000
 
 print(f"Generating {RETRAIN_DATASET_SIZE} samples for re-training...")
-retrain_dataset = FavoriteColorDataset(
+retrain_dataset = MostHatedCityDataset(
     tokenizer=tokenizer,
     size=RETRAIN_DATASET_SIZE,
     n_entities=N_ENTITIES,
-    n_colors=N_COLORS,
+    n_cities=N_CITIES,
     fixed_entity_name=FIXED_ENTITY,
     seed=100,
 )
 
 print(f"Extracting states for best head (Layer {best_layer}, Head {best_head_idx})...")
 retrain_states = np.zeros((RETRAIN_DATASET_SIZE, 256, 512), dtype=np.float16)
-retrain_colors = []
+retrain_cities = []
 
 for idx in tqdm(range(RETRAIN_DATASET_SIZE), desc="Extracting states"):
     sample = retrain_dataset[idx]
     input_ids = sample.input_ids.to(device)
     final_states = extractor.extract_final_states(input_ids)
     retrain_states[idx] = final_states[best_layer][0, best_head_idx].cpu().to(torch.float16).numpy()
-    retrain_colors.append(sample.fixed_entity_color)
+    retrain_cities.append(sample.fixed_entity_city)
 
-retrain_labels = torch.tensor([COLOR_TO_IDX[c] for c in retrain_colors])
+retrain_labels = torch.tensor([CITY_TO_IDX[c] for c in retrain_cities])
 retrain_states_tensor = torch.tensor(retrain_states, dtype=torch.float32)
 
 # %%
 print(f"Solving probe on Layer {best_layer}, Head {best_head_idx} with {RETRAIN_DATASET_SIZE} samples (closed form)...")
 
 n_samples = RETRAIN_DATASET_SIZE
-n_val = max(1, int(0.3 * n_samples))  # Same 30% split as original training
+n_val = max(1, int(0.3 * n_samples))
 indices = torch.randperm(n_samples)
 
 train_states = retrain_states_tensor[indices[n_val:]].to(device)
@@ -360,11 +356,11 @@ val_labels = retrain_labels[indices[:n_val]].to(device)
 best_head_o_proj = get_head_o_proj(model, best_layer, best_head_idx).to(device)
 
 # Precompute transformed states
-train_A = precompute_transformed_states(train_states, best_head_o_proj, color_unembed)
-val_A = precompute_transformed_states(val_states, best_head_o_proj, color_unembed)
+train_A = precompute_transformed_states(train_states, best_head_o_proj, city_unembed)
+val_A = precompute_transformed_states(val_states, best_head_o_proj, city_unembed)
 
 # Solve in closed form
-best_w_left = solve_w_left_closed_form(train_A, train_labels, n_colors)
+best_w_left = solve_w_left_closed_form(train_A, train_labels, n_cities)
 
 # Evaluate
 train_acc = evaluate_w_left(train_A, train_labels, best_w_left)
@@ -379,11 +375,11 @@ print("\n=== Visualization: Probe Accuracy Across All Token Positions ===")
 
 # Generate 3 samples with different sentence positions for the information
 print("Generating 3 samples with varied information positions...")
-temp_dataset = FavoriteColorDataset(
+temp_dataset = MostHatedCityDataset(
     tokenizer=tokenizer,
     size=100,
     n_entities=N_ENTITIES,
-    n_colors=N_COLORS,
+    n_cities=N_CITIES,
     fixed_entity_name=FIXED_ENTITY,
     seed=300,
 )
@@ -413,7 +409,7 @@ for sample_idx, sample in enumerate(viz_samples):
     input_ids = sample.input_ids.to(device)
     seq_len = input_ids.shape[1]
     info_idx = sample.fixed_entity_sentence_end_token_idx
-    true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+    true_city_idx = CITY_TO_IDX[sample.fixed_entity_city]
     
     # Extract incremental states for all positions
     incremental_states = extractor.extract_incremental_states_single_pass(
@@ -436,16 +432,16 @@ for sample_idx, sample in enumerate(viz_samples):
             state_tensor = torch.tensor(state_at_pos[0, best_head_idx], dtype=torch.float32).unsqueeze(0).to(device)
             
             # Compute prediction
-            A = precompute_transformed_states(state_tensor, best_head_o_proj, color_unembed)
+            A = precompute_transformed_states(state_tensor, best_head_o_proj, city_unembed)
             logits = torch.einsum('d,bdc->bc', best_w_left, A)
             
             # Top-1 accuracy
             pred_top1 = logits.argmax(dim=1).item()
-            is_correct_top1 = (pred_top1 == true_color_idx)
+            is_correct_top1 = (pred_top1 == true_city_idx)
             
             # Top-3 accuracy
             top3_preds = logits.topk(3, dim=1).indices[0].tolist()
-            is_correct_top3 = (true_color_idx in top3_preds)
+            is_correct_top3 = (true_city_idx in top3_preds)
             
             accuracies_top1.append(float(is_correct_top1))
             accuracies_top3.append(float(is_correct_top3))
@@ -456,17 +452,17 @@ for sample_idx, sample in enumerate(viz_samples):
     ax.plot(positions, accuracies_top1, 'b-', linewidth=2, alpha=0.7, label='Top-1')
     ax.plot(positions, accuracies_top3, 'g-', linewidth=2, alpha=0.7, label='Top-3')
     ax.axvline(x=info_idx, color='r', linestyle='--', linewidth=2, label=f'Info given (sentence {sample.fixed_entity_sentence_number})')
-    ax.axhline(y=1/n_colors, color='gray', linestyle=':', linewidth=1, alpha=0.5, label=f'Random top-1 ({1/n_colors:.2f})')
-    ax.axhline(y=3/n_colors, color='lightgray', linestyle=':', linewidth=1, alpha=0.5, label=f'Random top-3 ({3/n_colors:.2f})')
+    ax.axhline(y=1/n_cities, color='gray', linestyle=':', linewidth=1, alpha=0.5, label=f'Random top-1 ({1/n_cities:.2f})')
+    ax.axhline(y=3/n_cities, color='lightgray', linestyle=':', linewidth=1, alpha=0.5, label=f'Random top-3 ({3/n_cities:.2f})')
     ax.set_xlabel('Token Position')
     ax.set_ylabel('Correct (1) / Incorrect (0)')
-    ax.set_title(f'Sample {sample_idx + 1}: Color = {sample.fixed_entity_color}, Info at token {info_idx} (sentence {sample.fixed_entity_sentence_number})')
+    ax.set_title(f'Sample {sample_idx + 1}: City = {sample.fixed_entity_city}, Info at token {info_idx} (sentence {sample.fixed_entity_sentence_number})')
     ax.set_ylim(-0.1, 1.1)
     ax.legend(loc='upper left', fontsize=8)
     ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
-plt.savefig('../data/probe_accuracy_all_positions_top1_top3.png', dpi=150)
+plt.savefig('../data/probe_accuracy_all_positions_cities_top1_top3.png', dpi=150)
 plt.show()
 
 print("\nVisualization complete!")
@@ -481,11 +477,11 @@ seed_offset = 200
 
 pbar = tqdm(total=QUICK_EVAL_SAMPLES, desc="Generating samples")
 while len(quick_eval_samples) < QUICK_EVAL_SAMPLES:
-    temp_dataset = FavoriteColorDataset(
+    temp_dataset = MostHatedCityDataset(
         tokenizer=tokenizer,
         size=100,
         n_entities=100,
-        n_colors=N_COLORS,
+        n_cities=N_CITIES,
         fixed_entity_name=FIXED_ENTITY,
         seed=seed_offset,
     )
@@ -536,8 +532,8 @@ for batch_start in tqdm(range(0, len(quick_eval_samples), QUICK_BATCH_SIZE), des
     
     # Compute predictions for entire batch
     with torch.no_grad():
-        A = precompute_transformed_states(batch_states, best_head_o_proj, color_unembed)
-        logits = torch.einsum('d,bdc->bc', best_w_left, A)  # (batch_size_actual, n_colors)
+        A = precompute_transformed_states(batch_states, best_head_o_proj, city_unembed)
+        logits = torch.einsum('d,bdc->bc', best_w_left, A)  # (batch_size_actual, n_cities)
         
         # Top-1 predictions
         preds_top1 = logits.argmax(dim=1)  # (batch_size_actual,)
@@ -547,14 +543,14 @@ for batch_start in tqdm(range(0, len(quick_eval_samples), QUICK_BATCH_SIZE), des
     
     # Evaluate each sample in batch
     for i, sample in enumerate(batch_samples):
-        true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+        true_city_idx = CITY_TO_IDX[sample.fixed_entity_city]
         
         # Top-1 accuracy
-        if preds_top1[i].item() == true_color_idx:
+        if preds_top1[i].item() == true_city_idx:
             quick_correct_top1 += 1
         
         # Top-3 accuracy
-        if true_color_idx in top3_preds[i].tolist():
+        if true_city_idx in top3_preds[i].tolist():
             quick_correct_top3 += 1
         
         quick_total += 1
@@ -565,12 +561,12 @@ print(f"\n{'='*50}")
 print(f"Quick Evaluation Results (Info in Last 10 Sentences):")
 print(f"  Top-1 accuracy: {quick_accuracy_top1:.3f} ({quick_correct_top1}/{quick_total})")
 print(f"  Top-3 accuracy: {quick_accuracy_top3:.3f} ({quick_correct_top3}/{quick_total})")
-print(f"  Random baseline (top-1): {1/n_colors:.3f}")
-print(f"  Random baseline (top-3): {3/n_colors:.3f}")
+print(f"  Random baseline (top-1): {1/n_cities:.3f}")
+print(f"  Random baseline (top-3): {3/n_cities:.3f}")
 print(f"{'='*50}\n")
 
 # %%
-TARGET_EVAL_SAMPLES = 100
+TARGET_EVAL_SAMPLES = 5
 EVAL_N_ENTITIES = 500
 
 print(f"\nGenerating {TARGET_EVAL_SAMPLES} evaluation samples with {FIXED_ENTITY} at sentences 10-20...")
@@ -579,11 +575,11 @@ seed_offset = 43
 
 pbar = tqdm(total=TARGET_EVAL_SAMPLES, desc="Generating valid samples")
 while len(eval_samples) < TARGET_EVAL_SAMPLES:
-    temp_dataset = FavoriteColorDataset(
+    temp_dataset = MostHatedCityDataset(
         tokenizer=tokenizer,
         size=100,
         n_entities=EVAL_N_ENTITIES,
-        n_colors=N_COLORS,
+        n_cities=N_CITIES,
         fixed_entity_name=FIXED_ENTITY,
         seed=seed_offset,
     )
@@ -622,7 +618,7 @@ for sample_idx, sample in enumerate(tqdm(eval_samples, desc="Samples")):
     )
     
     info_idx = sample.fixed_entity_sentence_end_token_idx
-    true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+    true_city_idx = CITY_TO_IDX[sample.fixed_entity_city]
     
     with torch.no_grad():
         for pos in range(info_idx + 1, seq_len):
@@ -633,16 +629,16 @@ for sample_idx, sample in enumerate(tqdm(eval_samples, desc="Samples")):
             state_tensor = torch.tensor(state_at_pos[0, best_head_idx], dtype=torch.float32).unsqueeze(0).to(device)
             
             # Compute prediction using closed-form w_left and model weights
-            A = precompute_transformed_states(state_tensor, best_head_o_proj, color_unembed)
+            A = precompute_transformed_states(state_tensor, best_head_o_proj, city_unembed)
             logits = torch.einsum('d,bdc->bc', best_w_left, A)
             
             # Top-1 accuracy
             pred_top1 = logits.argmax(dim=1).item()
-            is_correct_top1 = (pred_top1 == true_color_idx)
+            is_correct_top1 = (pred_top1 == true_city_idx)
             
             # Top-3 accuracy
             top3_preds = logits.topk(3, dim=1).indices[0].tolist()
-            is_correct_top3 = (true_color_idx in top3_preds)
+            is_correct_top3 = (true_city_idx in top3_preds)
             
             relative_pos = pos - info_idx
             
@@ -662,15 +658,15 @@ mean_accs_top3 = [np.mean(eval_accuracies_by_position_top3[p]) for p in position
 plt.figure(figsize=(12, 6))
 plt.plot(positions, mean_accs_top1, 'b-', linewidth=2, label='Top-1 Accuracy')
 plt.plot(positions, mean_accs_top3, 'g-', linewidth=2, label='Top-3 Accuracy')
-plt.axhline(y=1/n_colors, color='r', linestyle='--', label=f'Random Baseline Top-1 ({1/n_colors:.3f})')
-plt.axhline(y=3/n_colors, color='orange', linestyle='--', label=f'Random Baseline Top-3 ({3/n_colors:.3f})')
+plt.axhline(y=1/n_cities, color='r', linestyle='--', label=f'Random Baseline Top-1 ({1/n_cities:.3f})')
+plt.axhline(y=3/n_cities, color='orange', linestyle='--', label=f'Random Baseline Top-3 ({3/n_cities:.3f})')
 plt.xlabel('Tokens after Information Given')
 plt.ylabel('Accuracy')
 plt.title(f'Probe Accuracy vs Position After Information\nLayer {best_layer}, Head {best_head_idx}')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('../data/probe_accuracy_by_position_top1_top3.png', dpi=150)
+plt.savefig('../data/probe_accuracy_by_position_cities_top1_top3.png', dpi=150)
 plt.show()
 
 # Plot rolling window accuracy for each sample individually - TOP-1
@@ -705,14 +701,14 @@ for sample_idx, trajectory in enumerate(sample_trajectories_top1):
     if rolling_traj:
         plt.plot(rolling_pos, rolling_traj, alpha=0.6, linewidth=1.5)
 
-plt.axhline(y=1/n_colors, color='r', linestyle='--', linewidth=2, label=f'Random Baseline ({1/n_colors:.3f})')
+plt.axhline(y=1/n_cities, color='r', linestyle='--', linewidth=2, label=f'Random Baseline ({1/n_cities:.3f})')
 plt.xlabel('Tokens after Information Given')
 plt.ylabel('Top-1 Accuracy')
 plt.title(f'Individual Rolling Window Top-1 Accuracies (window={window_size})\nLayer {best_layer}, Head {best_head_idx}')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('../data/probe_accuracy_rolling_window_top1.png', dpi=150)
+plt.savefig('../data/probe_accuracy_rolling_window_cities_top1.png', dpi=150)
 plt.show()
 
 # Plot rolling window accuracy for each sample individually - TOP-3
@@ -744,14 +740,14 @@ for sample_idx, trajectory in enumerate(sample_trajectories_top3):
     if rolling_traj:
         plt.plot(rolling_pos, rolling_traj, alpha=0.6, linewidth=1.5)
 
-plt.axhline(y=3/n_colors, color='orange', linestyle='--', linewidth=2, label=f'Random Baseline ({3/n_colors:.3f})')
+plt.axhline(y=3/n_cities, color='orange', linestyle='--', linewidth=2, label=f'Random Baseline ({3/n_cities:.3f})')
 plt.xlabel('Tokens after Information Given')
 plt.ylabel('Top-3 Accuracy')
 plt.title(f'Individual Rolling Window Top-3 Accuracies (window={window_size})\nLayer {best_layer}, Head {best_head_idx}')
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig('../data/probe_accuracy_rolling_window_top3.png', dpi=150)
+plt.savefig('../data/probe_accuracy_rolling_window_cities_top3.png', dpi=150)
 plt.show()
 
 print(f"\n=== Summary Statistics ===")
@@ -765,4 +761,5 @@ print(f"  At position +1: {mean_accs_top3[0]:.3f}")
 print(f"  Final: {mean_accs_top3[-1]:.3f}")
 
 # %%
+
 
