@@ -1,10 +1,10 @@
 import torch
 from typing import Dict, Optional, Tuple
 import warnings
+import json
 
-from fla.models.gla import GLAForCausalLM
 from transformers import AutoTokenizer
-
+from huggingface_hub import hf_hub_download
 
 def load_gla_model(
     model_name: str = "fla-hub/gla-1.3B-100B",
@@ -16,11 +16,62 @@ def load_gla_model(
         if device == "cpu":
             warnings.warn("CUDA not available. Loading model on CPU. This will be very slow for large models.")
 
-    print(f"Loading GLA model: {model_name}")
+    print(f"Loading model: {model_name}")
     print(f"Device: {device}, dtype: {torch_dtype}")
 
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    model = GLAForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype)
+    
+    # Download and parse config.json directly to avoid transformers issues
+    try:
+        config_path = hf_hub_download(model_name, "config.json")
+        with open(config_path, 'r') as f:
+            config_dict = json.load(f)
+        model_type = config_dict.get('model_type', None)
+        architectures = config_dict.get('architectures', [])
+    except Exception as e:
+        print(f"Could not fetch config.json: {e}")
+        model_type = None
+        architectures = []
+    
+    print(f"Detected model_type: {model_type}, architectures: {architectures}")
+    
+    model = None
+    
+    # Try fla models based on architecture/model_type
+    if 'TransformerForCausalLM' in architectures or model_type == 'transformer':
+        try:
+            from fla.models.transformer import TransformerForCausalLM
+            model = TransformerForCausalLM.from_pretrained(
+                model_name, 
+                torch_dtype=torch_dtype,
+                attn_implementation="eager"  # Avoid flash attention requirement
+            )
+            print("Loaded using fla TransformerForCausalLM")
+        except Exception as e:
+            print(f"fla TransformerForCausalLM failed: {e}")
+    
+    if model is None and ('GLAForCausalLM' in architectures or model_type == 'gla'):
+        try:
+            from fla.models.gla import GLAForCausalLM
+            model = GLAForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype)
+            print("Loaded using fla GLAForCausalLM")
+        except Exception as e:
+            print(f"fla GLAForCausalLM failed: {e}")
+    
+    # Fallback to AutoModelForCausalLM
+    if model is None:
+        try:
+            from transformers import AutoModelForCausalLM
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name, 
+                torch_dtype=torch_dtype, 
+                trust_remote_code=True,
+                attn_implementation="eager"  # Avoid flash attention requirement
+            )
+            print("Loaded using AutoModelForCausalLM")
+        except Exception as e:
+            raise RuntimeError(f"Failed to load model {model_name}: {e}")
+
     model = model.to(device)
     model.eval()
 
