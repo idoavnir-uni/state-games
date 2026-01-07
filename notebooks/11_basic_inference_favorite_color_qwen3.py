@@ -1,5 +1,5 @@
 # %% [markdown]
-# # Basic Inference with Favorite Color Dataset
+# # Basic Inference with Favorite Color Dataset (Qwen2.5-Instruct)
 #
 # Tests whether the model can correctly answer questions about favorite colors from context.
 
@@ -10,35 +10,50 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets.favorite_color_dataset import FavoriteColorDataset
-from models.load_gla import load_gla_model
 
 # %%
-model, tokenizer = load_gla_model(model_name="fla-hub/gla-2.7B-100B")
+model_name = "Qwen/Qwen2.5-3B-Instruct"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    torch_dtype="auto",
+    device_map="auto",
+)
 
 # %%
 dataset = FavoriteColorDataset(
     tokenizer=tokenizer,
-    size=1000,
+    size=10,
     n_entities=3,
     seed=42,
 )
 
 # %%
-PROMPT_TEMPLATE = """Answer the question based on the context below. Keep the answer short.
+SYSTEM_PROMPT = "You are a helpful assistant that responds in English. Answer the question based on the context. Reply with only the color name in English, nothing else."
 
-Context: {context}
+USER_PROMPT_TEMPLATE = """Context: {context}
 
-Question: What is the favorite color of {entity}?
-
-Answer: The favorite color of {entity} is """
+Question: What is the favorite color of {entity}?"""
 
 ENTITY_NAME = dataset.fixed_entity_name
 
 
 # %%
-def run_inference(model, tokenizer, prompt: str, max_new_tokens: int = 20) -> str:
-    inputs = tokenizer(prompt, return_tensors="pt")
+def run_inference(model, tokenizer, context: str, entity: str, max_new_tokens: int = 20) -> str:
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": USER_PROMPT_TEMPLATE.format(context=context, entity=entity)},
+    ]
+
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+    )
+
+    inputs = tokenizer(text, return_tensors="pt")
     input_ids = inputs.input_ids.to(model.device)
     attention_mask = inputs.attention_mask.to(model.device)
 
@@ -57,7 +72,7 @@ def run_inference(model, tokenizer, prompt: str, max_new_tokens: int = 20) -> st
 
 # %%
 print("=" * 80)
-print("Running Inference on 5 Samples")
+print(f"Running Inference on {len(dataset)} Samples")
 print("=" * 80)
 
 correct = 0
@@ -65,19 +80,18 @@ total = len(dataset)
 
 for i in range(total):
     sample = dataset[i]
-    prompt = PROMPT_TEMPLATE.format(context=sample.text, entity=ENTITY_NAME)
 
-    generated = run_inference(model, tokenizer, prompt)
+    generated = run_inference(model, tokenizer, sample.text, ENTITY_NAME)
     expected_color = sample.fixed_entity_color
 
-    generated_clean = generated.split('"')[0].strip().lower()
+    generated_clean = generated.strip().lower()
     is_correct = expected_color.lower() in generated_clean
 
     if is_correct:
         correct += 1
 
     print(f"\n--- Sample {i} ---")
-    print(f"Prompt:\n{prompt}")
+    print(f"Context: {sample.text}")
     print(f"Expected: {expected_color}")
     print(f"Generated: {generated}")
     print(f"Correct: {'✓' if is_correct else '✗'}")
