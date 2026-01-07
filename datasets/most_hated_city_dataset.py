@@ -9,14 +9,14 @@ FIXED_ENTITY_NAME = "Aardvark"
 DEFAULT_CITIES = [
     "Paris",
     "London",
-    "Tokyo",
     "Chicago",
-    "Berlin",
-    "Rome",
-    "Madrid",
-    "Sydney",
-    "Toronto",
     "Boston",
+    "Miami",
+    "Austin",
+    "Houston",
+    "York",
+    "Bern",
+    "Gary",
 ]
 
 
