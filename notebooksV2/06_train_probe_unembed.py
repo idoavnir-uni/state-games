@@ -73,7 +73,7 @@ print(f"Hidden size: {n_embd}")
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 100
+DATASET_SIZE = 2000
 N_ENTITIES = 10
 N_COLORS = 10
 FIXED_ENTITY = "Lady Gaga"

@@ -10,14 +10,14 @@ FIXED_ENTITY_NAME = "Lady Gaga"
 DEFAULT_ANIMALS = [
     "Cat",
     "Dog",
-    "Rabbit",
-    "Horse",
-    "Dolphin",
-    "Eagle",
+    "Bat",
+    "Fox",
+    "Ant",
+    "Fly",
+    "Rat",
+    "Fish",
     "Wolf",
-    "Bear",
-    "Lion",
-    "Tiger",
+    "Spider",
 ]
 
 
