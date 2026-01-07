@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from models.load_rwkv import load_rwkv_model, get_model_config, print_model_structure
 
 # %%
-model, tokenizer = load_rwkv_model()
+model, tokenizer = load_rwkv_model(model_name="rwkv7-g1b-1.5b-20251202-ctx8192.pth")
 config = get_model_config(model)
 print_model_structure(model)
 
@@ -38,10 +38,14 @@ print('\n')
 # State structure
 tot_layer = 0
 tot_params = 0
+avg_shape = None
 for s in state:
     if len(s.shape) != 1:
         tot_layer += 1
+        if avg_shape is None:
+            avg_shape = s.shape
         tot_params += s.shape[0] * s.shape[1] * s.shape[2] 
 print(f"Total layers: {tot_layer}")
 print(f"Total parameters: {tot_params//1024//1024} MB")
+print(f"Average shape: {avg_shape}")
 # %%

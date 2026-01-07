@@ -10,10 +10,12 @@ print("hf_xet installed:", importlib.util.find_spec("hf_xet") is not None)
 repo_id = "BlinkDL/rwkv7-g1"
 api = HfApi()
 files = api.list_repo_files(repo_id)
+print(files)
 
+# %%
 # pick newest file matching "*0.1b*ctx4096*.pth"
-cands = [f for f in files if f.endswith(".pth") and "0.1b" in f and "ctx4096" in f]
-assert cands, "No 0.1b ctx4096 .pth files found in repo."
+cands = [f for f in files if f.endswith(".pth") and "1.5b" in f and "ctx8192" in f]
+assert cands, "No 1.5b ctx4096 .pth files found in repo."
 
 def extract_date(fname: str):
     m = re.search(r"-(\d{8})-", fname)
