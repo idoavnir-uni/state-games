@@ -3,7 +3,7 @@
 # 
 # This notebook compares probe accuracy between:
 # 1. Standalone FavoriteAnimalDataset 
-# 2. CombinedDataset with 50/50 animals + colors (fixed entity from animals)
+# 2. CombinedDataset with configurable animal/color ratio (fixed entity from animals)
 
 # %%
 import sys
@@ -68,10 +68,15 @@ print(f"Hidden size: {n_embd}")
 # ## 3. Configuration
 
 # %%
-DATASET_SIZE = 2000
-N_ENTITIES = 10
+DATASET_SIZE = 3000
+N_ENTITIES = 300
 N_ANIMALS = 10
 FIXED_ENTITY = "Lady Gaga"
+
+# Combined dataset ratio
+N_ANIMALS_COMBINED = N_ENTITIES // 30
+N_COLORS_COMBINED = N_ENTITIES - N_ANIMALS_COMBINED
+ANIMAL_RATIO = f"{N_ANIMALS_COMBINED}/{N_ENTITIES}"
 
 ANIMALS = ["Cat", "Dog", "Bat", "Fox", "Ant", "Fly", "Rat", "Fish", "Wolf", "Spider"]
 
@@ -93,7 +98,7 @@ print(f"Fixed entity: {standalone_dataset.fixed_entity_name}")
 print(f"Animals: {standalone_dataset.animals}")
 
 # %%
-print("\nCreating 50/50 CombinedDataset (animals + colors)...")
+print(f"\nCreating {ANIMAL_RATIO} CombinedDataset ({N_ANIMALS_COMBINED} animals + {N_COLORS_COMBINED} colors)...")
 
 animal_config = DatasetConfig(
     sentence_template="{name}'s favorite animal is {value}.",
@@ -115,7 +120,7 @@ combined_dataset = CombinedDataset(
     tokenizer=tokenizer,
     dataset_configs={"animal": animal_config, "color": color_config},
     size=DATASET_SIZE,
-    sentences_per_config={"animal": N_ENTITIES // 2, "color": N_ENTITIES // 2},
+    sentences_per_config={"animal": N_ANIMALS_COMBINED, "color": N_COLORS_COMBINED},
     fixed_entity_source="animal",
     shuffle_sentences=True,
     seed=42,
@@ -402,7 +407,7 @@ def get_sample_for_visualization(dataset, is_combined=False, seed=301, n_samples
             tokenizer=tokenizer,
             dataset_configs={"animal": animal_config, "color": color_config},
             size=n_samples,
-            sentences_per_config={"animal": N_ENTITIES // 2, "color": N_ENTITIES // 2},
+            sentences_per_config={"animal": N_ANIMALS_COMBINED, "color": N_COLORS_COMBINED},
             fixed_entity_source="animal",
             shuffle_sentences=True,
             seed=seed,
@@ -515,7 +520,7 @@ for sample_idx in range(3):
     ax.axhline(y=1/n_animals, color='gray', linestyle=':', linewidth=1, alpha=0.5)
     ax.set_xlabel('Token Position')
     ax.set_ylabel('Correct')
-    ax.set_title(f'Combined 50/50 #{sample_idx+1}: {true_animal}')
+    ax.set_title(f'Combined {ANIMAL_RATIO} #{sample_idx+1}: {true_animal}')
     ax.set_ylim(-0.1, 1.1)
     ax.legend(loc='upper left', fontsize=8)
     ax.grid(True, alpha=0.3)
@@ -540,11 +545,13 @@ def generate_eval_samples(is_combined, target_count, n_entities, seed_start=43):
     pbar = tqdm(total=target_count, desc=f"Generating {'combined' if is_combined else 'standalone'} samples")
     while len(eval_samples) < target_count:
         if is_combined:
+            n_animals_eval = n_entities // 5
+            n_colors_eval = n_entities - n_animals_eval
             temp_dataset = CombinedDataset(
                 tokenizer=tokenizer,
                 dataset_configs={"animal": animal_config, "color": color_config},
                 size=100,
-                sentences_per_config={"animal": n_entities // 2, "color": n_entities // 2},
+                sentences_per_config={"animal": n_animals_eval, "color": n_colors_eval},
                 fixed_entity_source="animal",
                 shuffle_sentences=True,
                 seed=seed_offset,
@@ -581,6 +588,7 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
     """Evaluate probe on samples, tracking accuracy by relative position."""
     accuracies_by_position_top1 = {}
     accuracies_by_position_top3 = {}
+    max_relative_positions = []  # Track max relative position for each sample
     
     for sample in tqdm(eval_samples, desc=f"Evaluating {name}"):
         input_ids = sample.input_ids
@@ -598,6 +606,7 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
             true_animal = sample.fixed_entity_animal
         
         true_animal_idx = ANIMAL_TO_IDX[true_animal]
+        sample_max_relative_pos = 0
         
         with torch.no_grad():
             for pos in range(info_idx + 1, seq_len):
@@ -617,27 +626,33 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
                 is_correct_top3 = (true_animal_idx in top3_preds)
                 
                 relative_pos = pos - info_idx
+                sample_max_relative_pos = max(sample_max_relative_pos, relative_pos)
                 
                 if relative_pos not in accuracies_by_position_top1:
                     accuracies_by_position_top1[relative_pos] = []
                     accuracies_by_position_top3[relative_pos] = []
                 accuracies_by_position_top1[relative_pos].append(is_correct_top1)
                 accuracies_by_position_top3[relative_pos].append(is_correct_top3)
+        
+        max_relative_positions.append(sample_max_relative_pos)
     
-    return accuracies_by_position_top1, accuracies_by_position_top3
+    min_max_pos = min(max_relative_positions) if max_relative_positions else 0
+    return accuracies_by_position_top1, accuracies_by_position_top3, min_max_pos
 
 # %%
 print("\nEvaluating standalone samples...")
-standalone_acc_top1, standalone_acc_top3 = evaluate_samples(
+standalone_acc_top1, standalone_acc_top3, standalone_min_len = evaluate_samples(
     standalone_eval_samples, extractor, best_layer, best_head_idx,
     standalone_W_left, standalone_w_right, is_combined=False, name="Standalone"
 )
+print(f"Standalone: shortest input ends at relative position {standalone_min_len}")
 
 print("\nEvaluating combined samples...")
-combined_acc_top1, combined_acc_top3 = evaluate_samples(
+combined_acc_top1, combined_acc_top3, combined_min_len = evaluate_samples(
     combined_eval_samples, extractor, best_layer, best_head_idx,
     combined_W_left, combined_w_right, is_combined=True, name="Combined"
 )
+print(f"Combined: shortest input ends at relative position {combined_min_len}")
 
 # %% [markdown]
 # ## 13. Plot Comparison
@@ -659,23 +674,27 @@ fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 # Top-1 Accuracy
 ax = axes[0]
 ax.plot(standalone_pos_top1, standalone_mean_top1, 'b-', linewidth=2, label='Standalone (animals only)')
-ax.plot(combined_pos_top1, combined_mean_top1, 'orange', linewidth=2, label='Combined 50/50 (animals + colors)')
+ax.plot(combined_pos_top1, combined_mean_top1, 'orange', linewidth=2, label=f'Combined {ANIMAL_RATIO} (animals + colors)')
 ax.axhline(y=1/n_animals, color='r', linestyle='--', label=f'Random ({1/n_animals:.3f})')
+ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
+ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
 ax.set_ylabel('Top-1 Accuracy')
 ax.set_title('Top-1 Accuracy: Standalone vs Combined')
-ax.legend()
+ax.legend(fontsize=8)
 ax.grid(True, alpha=0.3)
 
 # Top-3 Accuracy
 ax = axes[1]
 ax.plot(standalone_pos_top3, standalone_mean_top3, 'b-', linewidth=2, label='Standalone (animals only)')
-ax.plot(combined_pos_top3, combined_mean_top3, 'orange', linewidth=2, label='Combined 50/50 (animals + colors)')
+ax.plot(combined_pos_top3, combined_mean_top3, 'orange', linewidth=2, label=f'Combined {ANIMAL_RATIO} (animals + colors)')
 ax.axhline(y=3/n_animals, color='r', linestyle='--', label=f'Random ({3/n_animals:.3f})')
+ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
+ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
 ax.set_ylabel('Top-3 Accuracy')
 ax.set_title('Top-3 Accuracy: Standalone vs Combined')
-ax.legend()
+ax.legend(fontsize=8)
 ax.grid(True, alpha=0.3)
 
 plt.suptitle(f'Probe Accuracy Comparison (Layer {best_layer}, Head {best_head_idx})', fontsize=14)
@@ -692,10 +711,12 @@ plt.plot(combined_pos_top1, combined_mean_top1, 'orange', linewidth=2, label='Co
 plt.plot(combined_pos_top3, combined_mean_top3, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Combined Top-3')
 plt.axhline(y=1/n_animals, color='gray', linestyle=':', label=f'Random Top-1 ({1/n_animals:.3f})')
 plt.axhline(y=3/n_animals, color='lightgray', linestyle=':', label=f'Random Top-3 ({3/n_animals:.3f})')
+plt.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
+plt.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
 plt.xlabel('Tokens after Information Given')
 plt.ylabel('Accuracy')
-plt.title(f'Probe Accuracy: Standalone vs Combined 50/50\nLayer {best_layer}, Head {best_head_idx}')
-plt.legend(loc='best')
+plt.title(f'Probe Accuracy: Standalone vs Combined {ANIMAL_RATIO}\nLayer {best_layer}, Head {best_head_idx}')
+plt.legend(loc='best', fontsize=8)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 safe_savefig(os.path.join(PROJECT_ROOT, 'data/compare_standalone_vs_combined_all.png'), dpi=150)
@@ -711,7 +732,7 @@ print("="*60)
 
 print(f"\nDataset Configuration:")
 print(f"  Standalone: {N_ENTITIES} sentences, all animals")
-print(f"  Combined: {N_ENTITIES} sentences, 50% animals + 50% colors")
+print(f"  Combined: {N_ENTITIES} sentences, {N_ANIMALS_COMBINED} animals ({ANIMAL_RATIO}) + {N_COLORS_COMBINED} colors")
 print(f"  Fixed entity: {FIXED_ENTITY}")
 
 print(f"\nBest Probe: Layer {best_layer}, Head {best_head_idx}")
@@ -721,7 +742,7 @@ print(f"  Validation Accuracy: {standalone_val_acc:.3f}")
 print(f"  Eval Top-1 Mean: {np.mean(standalone_mean_top1):.3f}")
 print(f"  Eval Top-3 Mean: {np.mean(standalone_mean_top3):.3f}")
 
-print(f"\nCombined Dataset (50/50):")
+print(f"\nCombined Dataset ({ANIMAL_RATIO} animals):")
 print(f"  Validation Accuracy: {combined_val_acc:.3f}")
 print(f"  Eval Top-1 Mean: {np.mean(combined_mean_top1):.3f}")
 print(f"  Eval Top-3 Mean: {np.mean(combined_mean_top3):.3f}")
