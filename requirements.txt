@@ -6,6 +6,7 @@ pandas
 matplotlib
 seaborn
 einops
+rwkv
 jupyter
 h5py
 scikit-learn
