@@ -640,19 +640,38 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
     return accuracies_by_position_top1, accuracies_by_position_top3, min_max_pos
 
 # %%
-print("\nEvaluating standalone samples...")
-standalone_acc_top1, standalone_acc_top3, standalone_min_len = evaluate_samples(
-    standalone_eval_samples, extractor, best_layer, best_head_idx,
-    standalone_W_left, standalone_w_right, is_combined=False, name="Standalone"
-)
-print(f"Standalone: shortest input ends at relative position {standalone_min_len}")
+# Evaluate all 4 combinations: (probe trained on X) tested on (dataset Y)
+print("\n=== Cross-evaluation: Each probe on both datasets ===")
 
-print("\nEvaluating combined samples...")
-combined_acc_top1, combined_acc_top3, combined_min_len = evaluate_samples(
-    combined_eval_samples, extractor, best_layer, best_head_idx,
-    combined_W_left, combined_w_right, is_combined=True, name="Combined"
+# Standalone probe on standalone data
+print("\nStandalone probe -> Standalone data...")
+standalone_on_standalone_top1, standalone_on_standalone_top3, standalone_min_len = evaluate_samples(
+    standalone_eval_samples, extractor, best_layer, best_head_idx,
+    standalone_W_left, standalone_w_right, is_combined=False, name="Standalone->Standalone"
 )
-print(f"Combined: shortest input ends at relative position {combined_min_len}")
+print(f"Standalone data: shortest input ends at relative position {standalone_min_len}")
+
+# Standalone probe on combined data
+print("\nStandalone probe -> Combined data...")
+standalone_on_combined_top1, standalone_on_combined_top3, combined_min_len = evaluate_samples(
+    combined_eval_samples, extractor, best_layer, best_head_idx,
+    standalone_W_left, standalone_w_right, is_combined=True, name="Standalone->Combined"
+)
+print(f"Combined data: shortest input ends at relative position {combined_min_len}")
+
+# Combined probe on standalone data
+print("\nCombined probe -> Standalone data...")
+combined_on_standalone_top1, combined_on_standalone_top3, _ = evaluate_samples(
+    standalone_eval_samples, extractor, best_layer, best_head_idx,
+    combined_W_left, combined_w_right, is_combined=False, name="Combined->Standalone"
+)
+
+# Combined probe on combined data
+print("\nCombined probe -> Combined data...")
+combined_on_combined_top1, combined_on_combined_top3, _ = evaluate_samples(
+    combined_eval_samples, extractor, best_layer, best_head_idx,
+    combined_W_left, combined_w_right, is_combined=True, name="Combined->Combined"
+)
 
 # %% [markdown]
 # ## 13. Plot Comparison
@@ -663,60 +682,71 @@ def get_mean_accuracies(acc_dict):
     means = [np.mean(acc_dict[p]) for p in positions]
     return positions, means
 
-standalone_pos_top1, standalone_mean_top1 = get_mean_accuracies(standalone_acc_top1)
-standalone_pos_top3, standalone_mean_top3 = get_mean_accuracies(standalone_acc_top3)
-combined_pos_top1, combined_mean_top1 = get_mean_accuracies(combined_acc_top1)
-combined_pos_top3, combined_mean_top3 = get_mean_accuracies(combined_acc_top3)
+# Get mean accuracies for all 4 combinations
+# Standalone probe
+standalone_on_standalone_pos_top1, standalone_on_standalone_mean_top1 = get_mean_accuracies(standalone_on_standalone_top1)
+standalone_on_standalone_pos_top3, standalone_on_standalone_mean_top3 = get_mean_accuracies(standalone_on_standalone_top3)
+standalone_on_combined_pos_top1, standalone_on_combined_mean_top1 = get_mean_accuracies(standalone_on_combined_top1)
+standalone_on_combined_pos_top3, standalone_on_combined_mean_top3 = get_mean_accuracies(standalone_on_combined_top3)
+
+# Combined probe
+combined_on_standalone_pos_top1, combined_on_standalone_mean_top1 = get_mean_accuracies(combined_on_standalone_top1)
+combined_on_standalone_pos_top3, combined_on_standalone_mean_top3 = get_mean_accuracies(combined_on_standalone_top3)
+combined_on_combined_pos_top1, combined_on_combined_mean_top1 = get_mean_accuracies(combined_on_combined_top1)
+combined_on_combined_pos_top3, combined_on_combined_mean_top3 = get_mean_accuracies(combined_on_combined_top3)
 
 # %%
-fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
-# Top-1 Accuracy
+# Top-1 Accuracy - 4 lines: (probe) -> (test data)
 ax = axes[0]
-ax.plot(standalone_pos_top1, standalone_mean_top1, 'b-', linewidth=2, label='Standalone (animals only)')
-ax.plot(combined_pos_top1, combined_mean_top1, 'orange', linewidth=2, label=f'Combined {ANIMAL_RATIO} (animals + colors)')
-ax.axhline(y=1/n_animals, color='r', linestyle='--', label=f'Random ({1/n_animals:.3f})')
-ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
-ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
+ax.plot(standalone_on_standalone_pos_top1, standalone_on_standalone_mean_top1, 'b-', linewidth=2, label='Homog. probe → Homog. data')
+ax.plot(standalone_on_combined_pos_top1, standalone_on_combined_mean_top1, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
+ax.plot(combined_on_standalone_pos_top1, combined_on_standalone_mean_top1, 'orange', linewidth=2, label='Mixed probe → Homog. data')
+ax.plot(combined_on_combined_pos_top1, combined_on_combined_mean_top1, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
+ax.axhline(y=1/n_animals, color='r', linestyle=':', label=f'Random ({1/n_animals:.3f})')
+ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
+ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
 ax.set_ylabel('Top-1 Accuracy')
-ax.set_title('Top-1 Accuracy: Standalone vs Combined')
-ax.legend(fontsize=8)
+ax.set_title('Top-1 Accuracy')
+ax.legend(fontsize=7, loc='best')
 ax.grid(True, alpha=0.3)
 
-# Top-3 Accuracy
+# Top-3 Accuracy - 4 lines
 ax = axes[1]
-ax.plot(standalone_pos_top3, standalone_mean_top3, 'b-', linewidth=2, label='Standalone (animals only)')
-ax.plot(combined_pos_top3, combined_mean_top3, 'orange', linewidth=2, label=f'Combined {ANIMAL_RATIO} (animals + colors)')
-ax.axhline(y=3/n_animals, color='r', linestyle='--', label=f'Random ({3/n_animals:.3f})')
-ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
-ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
+ax.plot(standalone_on_standalone_pos_top3, standalone_on_standalone_mean_top3, 'b-', linewidth=2, label='Homog. probe → Homog. data')
+ax.plot(standalone_on_combined_pos_top3, standalone_on_combined_mean_top3, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
+ax.plot(combined_on_standalone_pos_top3, combined_on_standalone_mean_top3, 'orange', linewidth=2, label='Mixed probe → Homog. data')
+ax.plot(combined_on_combined_pos_top3, combined_on_combined_mean_top3, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
+ax.axhline(y=3/n_animals, color='r', linestyle=':', label=f'Random ({3/n_animals:.3f})')
+ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
+ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
 ax.set_ylabel('Top-3 Accuracy')
-ax.set_title('Top-3 Accuracy: Standalone vs Combined')
-ax.legend(fontsize=8)
+ax.set_title('Top-3 Accuracy')
+ax.legend(fontsize=7, loc='best')
 ax.grid(True, alpha=0.3)
 
-plt.suptitle(f'Probe Accuracy Comparison (Layer {best_layer}, Head {best_head_idx})', fontsize=14)
+plt.suptitle(f'Cross-Evaluation: Probe vs Test Data (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} animals, Mixed={ANIMAL_RATIO} animals', fontsize=12)
 plt.tight_layout()
 safe_savefig(os.path.join(PROJECT_ROOT, 'data/compare_standalone_vs_combined_accuracy.png'), dpi=150)
 plt.show()
 
 # %%
-# Combined plot with both metrics
-plt.figure(figsize=(12, 6))
-plt.plot(standalone_pos_top1, standalone_mean_top1, 'b-', linewidth=2, label='Standalone Top-1')
-plt.plot(standalone_pos_top3, standalone_mean_top3, 'b--', linewidth=2, alpha=0.7, label='Standalone Top-3')
-plt.plot(combined_pos_top1, combined_mean_top1, 'orange', linewidth=2, label='Combined Top-1')
-plt.plot(combined_pos_top3, combined_mean_top3, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Combined Top-3')
-plt.axhline(y=1/n_animals, color='gray', linestyle=':', label=f'Random Top-1 ({1/n_animals:.3f})')
-plt.axhline(y=3/n_animals, color='lightgray', linestyle=':', label=f'Random Top-3 ({3/n_animals:.3f})')
-plt.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.7, label=f'Standalone shortest ends ({standalone_min_len})')
-plt.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.7, label=f'Combined shortest ends ({combined_min_len})')
+# Combined plot - Top-1 only for clarity with all 4 cross-evaluation lines
+plt.figure(figsize=(14, 6))
+plt.plot(standalone_on_standalone_pos_top1, standalone_on_standalone_mean_top1, 'b-', linewidth=2, label='Homog. probe → Homog. data')
+plt.plot(standalone_on_combined_pos_top1, standalone_on_combined_mean_top1, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
+plt.plot(combined_on_standalone_pos_top1, combined_on_standalone_mean_top1, 'green', linewidth=2, label='Mixed probe → Homog. data')
+plt.plot(combined_on_combined_pos_top1, combined_on_combined_mean_top1, 'green', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
+plt.axhline(y=1/n_animals, color='r', linestyle=':', label=f'Random ({1/n_animals:.3f})')
+plt.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
+plt.axvline(x=combined_min_len, color='green', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 plt.xlabel('Tokens after Information Given')
-plt.ylabel('Accuracy')
-plt.title(f'Probe Accuracy: Standalone vs Combined {ANIMAL_RATIO}\nLayer {best_layer}, Head {best_head_idx}')
-plt.legend(loc='best', fontsize=8)
+plt.ylabel('Top-1 Accuracy')
+plt.title(f'Cross-Evaluation Top-1 Accuracy (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} animals, Mixed={ANIMAL_RATIO} animals')
+plt.legend(loc='best', fontsize=9)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 safe_savefig(os.path.join(PROJECT_ROOT, 'data/compare_standalone_vs_combined_all.png'), dpi=150)
@@ -726,31 +756,32 @@ plt.show()
 # ## 14. Summary Statistics
 
 # %%
-print("\n" + "="*60)
-print("SUMMARY STATISTICS")
-print("="*60)
+print("\n" + "="*70)
+print("SUMMARY STATISTICS - CROSS EVALUATION")
+print("="*70)
 
 print(f"\nDataset Configuration:")
-print(f"  Standalone: {N_ENTITIES} sentences, all animals")
-print(f"  Combined: {N_ENTITIES} sentences, {N_ANIMALS_COMBINED} animals ({ANIMAL_RATIO}) + {N_COLORS_COMBINED} colors")
+print(f"  Homogeneous: {N_ENTITIES} sentences, all animals")
+print(f"  Mixed: {N_ENTITIES} sentences, {N_ANIMALS_COMBINED} animals ({ANIMAL_RATIO}) + {N_COLORS_COMBINED} colors")
 print(f"  Fixed entity: {FIXED_ENTITY}")
 
 print(f"\nBest Probe: Layer {best_layer}, Head {best_head_idx}")
 
-print(f"\nStandalone Dataset:")
-print(f"  Validation Accuracy: {standalone_val_acc:.3f}")
-print(f"  Eval Top-1 Mean: {np.mean(standalone_mean_top1):.3f}")
-print(f"  Eval Top-3 Mean: {np.mean(standalone_mean_top3):.3f}")
+print(f"\nTraining Validation Accuracies:")
+print(f"  Homogeneous probe: {standalone_val_acc:.3f}")
+print(f"  Mixed probe: {combined_val_acc:.3f}")
 
-print(f"\nCombined Dataset ({ANIMAL_RATIO} animals):")
-print(f"  Validation Accuracy: {combined_val_acc:.3f}")
-print(f"  Eval Top-1 Mean: {np.mean(combined_mean_top1):.3f}")
-print(f"  Eval Top-3 Mean: {np.mean(combined_mean_top3):.3f}")
+print(f"\nCross-Evaluation Top-1 Accuracy (mean across positions):")
+print(f"  {'Probe':<20} {'→ Homog. Data':<15} {'→ Mixed Data':<15}")
+print(f"  {'-'*50}")
+print(f"  {'Homogeneous probe':<20} {np.mean(standalone_on_standalone_mean_top1):<15.3f} {np.mean(standalone_on_combined_mean_top1):<15.3f}")
+print(f"  {'Mixed probe':<20} {np.mean(combined_on_standalone_mean_top1):<15.3f} {np.mean(combined_on_combined_mean_top1):<15.3f}")
 
-print(f"\nDifference (Combined - Standalone):")
-print(f"  Val Accuracy: {combined_val_acc - standalone_val_acc:+.3f}")
-print(f"  Eval Top-1 Mean: {np.mean(combined_mean_top1) - np.mean(standalone_mean_top1):+.3f}")
-print(f"  Eval Top-3 Mean: {np.mean(combined_mean_top3) - np.mean(standalone_mean_top3):+.3f}")
+print(f"\nCross-Evaluation Top-3 Accuracy (mean across positions):")
+print(f"  {'Probe':<20} {'→ Homog. Data':<15} {'→ Mixed Data':<15}")
+print(f"  {'-'*50}")
+print(f"  {'Homogeneous probe':<20} {np.mean(standalone_on_standalone_mean_top3):<15.3f} {np.mean(standalone_on_combined_mean_top3):<15.3f}")
+print(f"  {'Mixed probe':<20} {np.mean(combined_on_standalone_mean_top3):<15.3f} {np.mean(combined_on_combined_mean_top3):<15.3f}")
 
 # %%
 
