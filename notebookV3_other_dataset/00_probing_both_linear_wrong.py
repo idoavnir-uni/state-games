@@ -1,15 +1,17 @@
 # %% [markdown]
-# # State Probing Experiment (GPU 6)
+# # RWKV State Probing Experiment - Wrong Direction (Vector @ State @ Matrix)
 # 
 # This notebook:
-# 1. Generates favorite color sentences with a fixed entity (Jeff Bezos)
-# 2. Extracts GLA model states at the final token position
-# 3. Trains linear probes on each layer/head to predict the target color
+# 1. Generates favorite city sentences with a fixed entity (bat)
+# 2. Extracts RWKV model states at the final token position
+# 3. Trains linear probes on each layer/head to predict the target city
 # 
-# **Probe model:** logits = (W_left @ state) @ w_right
-# - state: (256, 512) per head
-# - W_left: (3, 256) learned matrix → projects to (3, 512)
-# - w_right: (512,) learned vector → 3 color logits
+# **Probe model (WRONG):** logits = (w_left @ state) @ W_right
+# - state: (head_size, head_size) per head
+# - w_left: (head_size,) learned vector → w_left @ state = (head_size,)
+# - W_right: (head_size, n_cities) learned matrix → n_cities logits
+#
+# Compare to correct: logits = (W_left @ state) @ w_right
 
 # %%
 import sys
@@ -19,13 +21,13 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '2'
+os.environ['CUDA_VISIBLE_DEVICES'] = '6'
 
 sys.path.insert(0, os.path.abspath('..'))
 
-from models.load_gla import load_gla_model, get_model_config
-from models.state_extractor_gla import GLAStateExtractor
-from datasets.favorite_color_dataset import FavoriteColorDataset
+from models.load_rwkv import load_rwkv_model, get_model_config
+from models.state_extractor_rwkv import RWKVStateExtractor
+from datasets.lives_in_city_dataset import LivesInCityDataset
 
 print("Imports complete!")
 print(f"CUDA_VISIBLE_DEVICES set to: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
@@ -40,12 +42,8 @@ if device == "cuda":
     print(f"GPU Name: {torch.cuda.get_device_name(0)}")
     print(f"GPU Memory: {torch.cuda.get_device_properties(0).total_memory / 1e9:.2f} GB")
 
-print("Loading GLA model...")
-model, tokenizer = load_gla_model(
-    model_name="fla-hub/gla-1.3B-100B",
-    device=device,
-    torch_dtype=torch.bfloat16
-)
+print("Loading RWKV model...")
+model, tokenizer = load_rwkv_model(model_name="rwkv7-g1b-1.5b-20251202-ctx8192.pth")
 
 config = get_model_config(model)
 print(f"Model loaded: {config.get('num_layers')} layers, {config.get('num_heads')} heads")
@@ -54,26 +52,29 @@ print(f"Model loaded: {config.get('num_layers')} layers, {config.get('num_heads'
 # ## 2. Initialize State Extractor
 
 # %%
-extractor = GLAStateExtractor(model, verbose=False)
+extractor = RWKVStateExtractor(model, verbose=False)
+head_size = extractor.head_size
+print(f"Head size: {head_size}")
 
 # %% [markdown]
-# ## 3. Create Favorite Color Dataset
+# ## 3. Create Favorite City Dataset
 
 # %%
-DATASET_SIZE = 1000
-N_ENTITIES = 10
-N_COLORS = 10
+DATASET_SIZE = 10000
+N_ENTITIES = 30
+N_CITIES = 10
 
 print(f"Creating dataset with {DATASET_SIZE} samples...")
-dataset = FavoriteColorDataset(
+dataset = LivesInCityDataset(
     tokenizer=tokenizer,
     size=DATASET_SIZE,
     n_entities=N_ENTITIES,
-    n_colors=N_COLORS,
+    n_cities=N_CITIES,
+    fixed_entity_name="bat",
     seed=42,
 )
 print(f"Dataset created with {len(dataset)} samples")
-print(f"Colors used: {dataset.colors}")
+print(f"Cities used: {dataset.cities}")
 
 # %% [markdown]
 # ## 4. Extract States and Build Dataframe
@@ -86,24 +87,24 @@ print(f"Extracting states for {DATASET_SIZE} samples...")
 print(f"Model has {num_layers} layers and {num_heads} heads per layer")
 
 metadata_rows = []
-all_states = np.zeros((DATASET_SIZE, num_layers, num_heads, 256, 512), dtype=np.float16)
+all_states = np.zeros((DATASET_SIZE, num_layers, num_heads, head_size, head_size), dtype=np.float16)
 
 for idx in tqdm(range(len(dataset)), desc="Processing samples"):
     sample = dataset[idx]
     
-    input_ids = sample.input_ids.to(device)
+    input_ids = sample.input_ids
     final_states = extractor.extract_final_states(input_ids)
     
     metadata_rows.append({
         'sentence': sample.text,
-        'target_color': sample.fixed_entity_color,
+        'target_city': sample.fixed_entity_city,
         'information_given_idx': sample.fixed_entity_sentence_end_token_idx,
         'sentence_with_info_num': sample.fixed_entity_sentence_number,
     })
     
     for layer_idx in range(num_layers):
         layer_state = final_states[layer_idx]
-        all_states[idx, layer_idx] = layer_state[0].cpu().to(torch.float16).numpy()
+        all_states[idx, layer_idx] = layer_state.cpu().to(torch.float16).numpy()
 
 df = pd.DataFrame(metadata_rows)
 print(f"\nMetadata dataframe shape: {df.shape}")
@@ -115,47 +116,48 @@ print(f"States array shape: {all_states.shape}")
 # %%
 print("\n=== Sample Entry ===")
 print(f"Sentence: {df.iloc[0]['sentence']}")
-print(f"Target color: {df.iloc[0]['target_color']}")
-print(f"States shape: {all_states.shape} = (samples, layers, heads, 256, 512)")
+print(f"Target city: {df.iloc[0]['target_city']}")
+print(f"States shape: {all_states.shape} = (samples, layers, heads, {head_size}, {head_size})")
 
 print("\n=== Dataset Statistics ===")
 print(f"Total samples: {len(df)}")
-print(f"Color distribution:\n{df['target_color'].value_counts()}")
+print(f"City distribution:\n{df['target_city'].value_counts()}")
 
 # %% [markdown]
-# ## 6. Train Linear Probe on States
+# ## 6. Train Linear Probe on States (WRONG DIRECTION)
 # 
-# Model: logits = (W_left @ state) @ w_right
-# - state: (256, 512)
-# - W_left: (n_colors, 256) matrix → W_left @ state = (n_colors, 512)
-# - w_right: (512,) vector → (n_colors, 512) @ (512,) = (n_colors,)
+# Model: logits = (w_left @ state) @ W_right
+# - state: (head_size, head_size)
+# - w_left: (head_size,) vector → w_left @ state = (head_size,)
+# - W_right: (head_size, n_cities) matrix → (head_size,) @ (head_size, n_cities) = (n_cities,)
 
 # %%
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import TensorDataset, DataLoader
 
-COLOR_TO_IDX = {color: idx for idx, color in enumerate(dataset.colors)}
-labels = torch.tensor([COLOR_TO_IDX[c] for c in df['target_color']])
-n_colors = len(dataset.colors)
+CITY_TO_IDX = {city: idx for idx, city in enumerate(dataset.cities)}
+labels = torch.tensor([CITY_TO_IDX[c] for c in df['target_city']])
+n_cities = len(dataset.cities)
 
-print(f"Color mapping: {COLOR_TO_IDX}")
+print(f"City mapping: {CITY_TO_IDX}")
 
 # %%
-class StateProbe(nn.Module):
-    def __init__(self, n_classes):
+class StateProbeWrong(nn.Module):
+    def __init__(self, head_size, n_classes):
         super().__init__()
-        self.W_left = nn.Parameter(torch.randn(n_classes, 256) * 0.01)
-        self.w_right = nn.Parameter(torch.randn(512) * 0.01)
+        # WRONG: vector on left, matrix on right
+        self.w_left = nn.Parameter(torch.randn(head_size) * 0.01)
+        self.W_right = nn.Parameter(torch.randn(head_size, n_classes) * 0.01)
     
     def forward(self, state):
-        # state: (batch, 256, 512)
-        hidden = torch.einsum('cd,bdk->bck', self.W_left, state)  # (batch, n_classes, 512)
-        logits = torch.einsum('bck,k->bc', hidden, self.w_right)  # (batch, n_classes)
+        # state: (batch, head_size, head_size)
+        # w_left @ state: (d,) @ (b, d, k) -> (b, k)
+        hidden = torch.einsum('d,bdk->bk', self.w_left, state)  # (batch, head_size)
+        # hidden @ W_right: (b, k) @ (k, c) -> (b, c)
+        logits = torch.einsum('bk,kc->bc', hidden, self.W_right)  # (batch, n_classes)
         return logits
 
-# %%
-def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
+def train_probe(states_np, labels, layer_idx, head_idx, patience=20, batch_size=1000):
     states = torch.tensor(states_np[:, layer_idx, head_idx], dtype=torch.float32)
     
     n_samples = len(labels)
@@ -167,7 +169,7 @@ def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
     val_states = states[indices[:n_val]]
     val_labels = labels[indices[:n_val]]
     
-    probe = StateProbe(n_colors).to(device)
+    probe = StateProbeWrong(head_size, n_cities).to(device)
     optimizer = optim.Adam(probe.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
     
@@ -175,13 +177,28 @@ def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
     best_val_acc = 0.0
     patience_counter = 0
     
-    for epoch in range(1000):
+    n_train = len(train_states)
+    
+    for epoch in range(20000):
         probe.train()
-        optimizer.zero_grad()
-        logits = probe(train_states.to(device))
-        loss = criterion(logits, train_labels.to(device))
-        loss.backward()
-        optimizer.step()
+        
+        batch_indices = torch.randperm(n_train)
+        epoch_loss = 0.0
+        n_batches = 0
+        
+        for i in range(0, n_train, batch_size):
+            batch_idx = batch_indices[i:i+batch_size]
+            batch_states = train_states[batch_idx].to(device)
+            batch_labels = train_labels[batch_idx].to(device)
+            
+            optimizer.zero_grad()
+            logits = probe(batch_states)
+            loss = criterion(logits, batch_labels)
+            loss.backward()
+            optimizer.step()
+            
+            epoch_loss += loss.item()
+            n_batches += 1
         
         probe.eval()
         with torch.no_grad():
@@ -190,7 +207,8 @@ def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
             val_preds = val_logits.argmax(dim=1)
             val_acc = (val_preds == val_labels.to(device)).float().mean().item()
             
-            train_preds = logits.argmax(dim=1)
+            train_logits = probe(train_states.to(device))
+            train_preds = train_logits.argmax(dim=1)
             train_acc = (train_preds == train_labels.to(device)).float().mean().item()
         
         if val_loss < best_val_loss:
@@ -205,8 +223,7 @@ def train_probe(states_np, labels, layer_idx, head_idx, patience=10):
     
     return best_val_acc, train_acc, epoch + 1
 
-# %%
-print("Training probes for each layer/head...")
+print("Training probes (WRONG direction) for each layer/head...")
 print(f"{'Layer':<6} {'Head':<6} {'Val Acc':<10} {'Train Acc':<10} {'Epochs':<8}")
 print("-" * 40)
 
@@ -223,10 +240,14 @@ for layer_idx in range(num_layers):
         })
         print(f"L{layer_idx:<5} H{head_idx:<5} {val_acc:<10.3f} {train_acc:<10.3f} {epochs:<8}")
 
-# %%
 results_df = pd.DataFrame(results)
 print("\n=== Best Performing Heads ===")
-print(results_df.sort_values('val_acc', ascending=False).head(10))
+top_50 = results_df.sort_values('val_acc', ascending=False).head(50)
+for idx, row in top_50.iterrows():
+    print(f"L{row['layer']:<5} H{row['head']:<5} {row['val_acc']:<10.3f} {row['train_acc']:<10.3f} {row['epochs']:<8}")
+
+os.makedirs('results', exist_ok=True)
+top_50.to_csv('results/result_both_linear_wrong.csv', index=False)
+print(f"\nResults saved to results/result_both_linear_wrong.csv")
 
 # %%
-

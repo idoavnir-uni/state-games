@@ -19,7 +19,7 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -58,8 +58,8 @@ print(f"Head size: {head_size}")
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 5000
-N_ENTITIES = 10
+DATASET_SIZE = 10000
+N_ENTITIES = 30
 N_COLORS = 10
 
 print(f"Creating dataset with {DATASET_SIZE} samples...")
@@ -240,6 +240,10 @@ print("\n=== Best Performing Heads ===")
 top_50 = results_df.sort_values('val_acc', ascending=False).head(50)
 for idx, row in top_50.iterrows():
     print(f"L{row['layer']:<5} H{row['head']:<5} {row['val_acc']:<10.3f} {row['train_acc']:<10.3f} {row['epochs']:<8}")
+
+os.makedirs('results', exist_ok=True)
+top_50.to_csv('results/result_both_linear.csv', index=False)
+print(f"\nResults saved to results/result_both_linear.csv")
 
 # %%
 

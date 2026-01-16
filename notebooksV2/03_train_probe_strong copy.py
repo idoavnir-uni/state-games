@@ -58,7 +58,7 @@ print(f"Head size: {head_size}")
 # ## 3. Create Favorite Color Dataset
 
 # %%
-DATASET_SIZE = 5000
+DATASET_SIZE = 200
 N_ENTITIES = 10
 N_COLORS = 10
 
@@ -143,13 +143,17 @@ print(f"Color mapping: {COLOR_TO_IDX}")
 class StateProbe(nn.Module):
     def __init__(self, head_size, n_classes):
         super().__init__()
-        self.W_left = nn.Parameter(torch.randn(n_classes, head_size) * 0.01)
+        hidden_dim = head_size
         self.w_right = nn.Parameter(torch.randn(head_size) * 0.01)
+        self.W_left_1 = nn.Parameter(torch.randn(hidden_dim, head_size) * 0.01)
+        self.W_left_2 = nn.Parameter(torch.randn(n_classes, hidden_dim) * 0.01)
     
     def forward(self, state):
         # state: (batch, head_size, head_size)
-        hidden = torch.einsum('cd,bdk->bck', self.W_left, state)  # (batch, n_classes, head_size)
-        logits = torch.einsum('bck,k->bc', hidden, self.w_right)  # (batch, n_classes)
+        compressed = torch.einsum('bdk,k->bd', state, self.w_right)  # (batch, head_size)
+        hidden1 = torch.einsum('hd,bd->bh', self.W_left_1, compressed)  # (batch, hidden_dim)
+        hidden1 = torch.relu(hidden1)
+        logits = torch.einsum('ch,bh->bc', self.W_left_2, hidden1)  # (batch, n_classes)
         return logits
 
 def train_probe(states_np, labels, layer_idx, head_idx, patience=20, batch_size=1000):
@@ -237,9 +241,7 @@ for layer_idx in range(num_layers):
 
 results_df = pd.DataFrame(results)
 print("\n=== Best Performing Heads ===")
-top_50 = results_df.sort_values('val_acc', ascending=False).head(50)
-for idx, row in top_50.iterrows():
-    print(f"L{row['layer']:<5} H{row['head']:<5} {row['val_acc']:<10.3f} {row['train_acc']:<10.3f} {row['epochs']:<8}")
+print(results_df.sort_values('val_acc', ascending=False).head(10))
 
 # %%
 

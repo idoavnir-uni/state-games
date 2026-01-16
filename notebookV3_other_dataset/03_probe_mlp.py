@@ -2,14 +2,14 @@
 # # RWKV State Probing Experiment - Wrong Direction (GPU 2)
 # 
 # This notebook:
-# 1. Generates favorite color sentences with a fixed entity (Lady Gaga)
+# 1. Generates favorite city sentences with a fixed entity (Lady Gaga)
 # 2. Extracts RWKV model states at the final token position
-# 3. Trains linear probes on each layer/head to predict the target color
+# 3. Trains linear probes on each layer/head to predict the target city
 # 
 # **Probe model:** logits = (W_left @ state) @ w_right
 # - state: (head_size, head_size) per head
-# - W_left: (n_colors, head_size) learned matrix → projects to (n_colors, head_size)
-# - w_right: (head_size,) learned vector → n_colors logits
+# - W_left: (n_cities, head_size) learned matrix → projects to (n_cities, head_size)
+# - w_right: (head_size,) learned vector → n_cities logits
 
 # %%
 import sys
@@ -19,13 +19,13 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '6'
+os.environ['CUDA_VISIBLE_DEVICES'] = '3'
 
 sys.path.insert(0, os.path.abspath('..'))
 
 from models.load_rwkv import load_rwkv_model, get_model_config
 from models.state_extractor_rwkv import RWKVStateExtractor
-from datasets.favorite_color_dataset import FavoriteColorDataset
+from datasets.lives_in_city_dataset import LivesInCityDataset
 
 print("Imports complete!")
 print(f"CUDA_VISIBLE_DEVICES set to: {os.environ.get('CUDA_VISIBLE_DEVICES')}")
@@ -55,24 +55,24 @@ head_size = extractor.head_size
 print(f"Head size: {head_size}")
 
 # %% [markdown]
-# ## 3. Create Favorite Color Dataset
+# ## 3. Create Favorite City Dataset
 
 # %%
-DATASET_SIZE = 5000
-N_ENTITIES = 10
-N_COLORS = 10
+DATASET_SIZE = 10000
+N_ENTITIES = 30
+N_CITIES = 10
 
 print(f"Creating dataset with {DATASET_SIZE} samples...")
-dataset = FavoriteColorDataset(
+dataset = LivesInCityDataset(
     tokenizer=tokenizer,
     size=DATASET_SIZE,
     n_entities=N_ENTITIES,
-    n_colors=N_COLORS,
-    fixed_entity_name="Lady Gaga",
+    n_cities=N_CITIES,
+    fixed_entity_name="bat",
     seed=42,
 )
 print(f"Dataset created with {len(dataset)} samples")
-print(f"Colors used: {dataset.colors}")
+print(f"Cities used: {dataset.cities}")
 
 # %% [markdown]
 # ## 4. Extract States and Build Dataframe
@@ -95,7 +95,7 @@ for idx in tqdm(range(len(dataset)), desc="Processing samples"):
     
     metadata_rows.append({
         'sentence': sample.text,
-        'target_color': sample.fixed_entity_color,
+        'target_city': sample.fixed_entity_city,
         'information_given_idx': sample.fixed_entity_sentence_end_token_idx,
         'sentence_with_info_num': sample.fixed_entity_sentence_number,
     })
@@ -114,42 +114,46 @@ print(f"States array shape: {all_states.shape}")
 # %%
 print("\n=== Sample Entry ===")
 print(f"Sentence: {df.iloc[0]['sentence']}")
-print(f"Target color: {df.iloc[0]['target_color']}")
+print(f"Target city: {df.iloc[0]['target_city']}")
 print(f"States shape: {all_states.shape} = (samples, layers, heads, {head_size}, {head_size})")
 
 print("\n=== Dataset Statistics ===")
 print(f"Total samples: {len(df)}")
-print(f"Color distribution:\n{df['target_color'].value_counts()}")
+print(f"City distribution:\n{df['target_city'].value_counts()}")
 
 # %% [markdown]
 # ## 6. Train Linear Probe on States
 # 
 # Model: logits = (W_left @ state) @ w_right
 # - state: (head_size, head_size)
-# - W_left: (n_colors, head_size) matrix → W_left @ state = (n_colors, head_size)
-# - w_right: (head_size,) vector → (n_colors, head_size) @ (head_size,) = (n_colors,)
+# - W_left: (n_cities, head_size) matrix → W_left @ state = (n_cities, head_size)
+# - w_right: (head_size,) vector → (n_cities, head_size) @ (head_size,) = (n_cities,)
 
 # %%
 import torch.nn as nn
 import torch.optim as optim
 
-COLOR_TO_IDX = {color: idx for idx, color in enumerate(dataset.colors)}
-labels = torch.tensor([COLOR_TO_IDX[c] for c in df['target_color']])
-n_colors = len(dataset.colors)
+CITY_TO_IDX = {city: idx for idx, city in enumerate(dataset.cities)}
+labels = torch.tensor([CITY_TO_IDX[c] for c in df['target_city']])
+n_cities = len(dataset.cities)
 
-print(f"Color mapping: {COLOR_TO_IDX}")
+print(f"City mapping: {CITY_TO_IDX}")
 
 # %%
 class StateProbe(nn.Module):
     def __init__(self, head_size, n_classes):
         super().__init__()
-        self.W_left = nn.Parameter(torch.randn(n_classes, head_size) * 0.01)
+        hidden_dim = head_size
         self.w_right = nn.Parameter(torch.randn(head_size) * 0.01)
+        self.W_left_1 = nn.Parameter(torch.randn(hidden_dim, head_size) * 0.01)
+        self.W_left_2 = nn.Parameter(torch.randn(n_classes, hidden_dim) * 0.01)
     
     def forward(self, state):
         # state: (batch, head_size, head_size)
-        hidden = torch.einsum('cd,bdk->bck', self.W_left, state)  # (batch, n_classes, head_size)
-        logits = torch.einsum('bck,k->bc', hidden, self.w_right)  # (batch, n_classes)
+        compressed = torch.einsum('bdk,k->bd', state, self.w_right)  # (batch, head_size)
+        hidden1 = torch.einsum('hd,bd->bh', self.W_left_1, compressed)  # (batch, hidden_dim)
+        hidden1 = torch.relu(hidden1)
+        logits = torch.einsum('ch,bh->bc', self.W_left_2, hidden1)  # (batch, n_classes)
         return logits
 
 def train_probe(states_np, labels, layer_idx, head_idx, patience=20, batch_size=1000):
@@ -164,7 +168,7 @@ def train_probe(states_np, labels, layer_idx, head_idx, patience=20, batch_size=
     val_states = states[indices[:n_val]]
     val_labels = labels[indices[:n_val]]
     
-    probe = StateProbe(head_size, n_colors).to(device)
+    probe = StateProbe(head_size, n_cities).to(device)
     optimizer = optim.Adam(probe.parameters(), lr=1e-3)
     criterion = nn.CrossEntropyLoss()
     
@@ -241,6 +245,10 @@ top_50 = results_df.sort_values('val_acc', ascending=False).head(50)
 for idx, row in top_50.iterrows():
     print(f"L{row['layer']:<5} H{row['head']:<5} {row['val_acc']:<10.3f} {row['train_acc']:<10.3f} {row['epochs']:<8}")
 
+os.makedirs('results', exist_ok=True)
+top_50.to_csv('results/result_mlp.csv', index=False)
+print(f"\nResults saved to results/result_mlp.csv")
+
 # %%
 
 # # %%
@@ -258,27 +266,27 @@ for idx, row in top_50.iterrows():
 # RETRAIN_DATASET_SIZE = 10000
 
 # print(f"Generating {RETRAIN_DATASET_SIZE} samples for re-training...")
-# retrain_dataset = FavoriteColorDataset(
+# retrain_dataset = LivesInCityDataset(
 #     tokenizer=tokenizer,
 #     size=RETRAIN_DATASET_SIZE,
 #     n_entities=N_ENTITIES,
-#     n_colors=N_COLORS,
-#     fixed_entity_name="Lady Gaga",
+#     n_cities=N_CITIES,
+#     fixed_entity_name="Bat",
 #     seed=100,
 # )
 
 # print(f"Extracting states for best head (Layer {best_layer}, Head {best_head_idx})...")
 # retrain_states = np.zeros((RETRAIN_DATASET_SIZE, head_size, head_size), dtype=np.float16)
-# retrain_colors = []
+# retrain_cities = []
 
 # for idx in tqdm(range(RETRAIN_DATASET_SIZE), desc="Extracting states"):
 #     sample = retrain_dataset[idx]
 #     input_ids = sample.input_ids
 #     final_states = extractor.extract_final_states(input_ids)
 #     retrain_states[idx] = final_states[best_layer][best_head_idx].cpu().to(torch.float16).numpy()
-#     retrain_colors.append(sample.fixed_entity_color)
+#     retrain_cities.append(sample.fixed_entity_city)
 
-# retrain_labels = torch.tensor([COLOR_TO_IDX[c] for c in retrain_colors])
+# retrain_labels = torch.tensor([CITY_TO_IDX[c] for c in retrain_cities])
 # retrain_states_tensor = torch.tensor(retrain_states, dtype=torch.float32)
 
 # # %%
@@ -293,7 +301,7 @@ for idx, row in top_50.iterrows():
 # val_states = retrain_states_tensor[indices[:n_val]]
 # val_labels = retrain_labels[indices[:n_val]]
 
-# best_probe = StateProbe(head_size, n_colors).to(device)
+# best_probe = StateProbe(head_size, n_cities).to(device)
 # optimizer = optim.Adam(best_probe.parameters(), lr=1e-3)
 # criterion = nn.CrossEntropyLoss()
 
@@ -335,12 +343,12 @@ for idx, row in top_50.iterrows():
 
 # pbar = tqdm(total=TARGET_EVAL_SAMPLES, desc="Generating valid samples")
 # while len(eval_samples) < TARGET_EVAL_SAMPLES:
-#     temp_dataset = FavoriteColorDataset(
+#     temp_dataset = LivesInCityDataset(
 #         tokenizer=tokenizer,
 #         size=100,
 #         n_entities=EVAL_N_ENTITIES,
-#         n_colors=N_COLORS,
-#         fixed_entity_name="Lady Gaga",
+#         n_cities=N_CITIES,
+#         fixed_entity_name="Bat",
 #         seed=seed_offset,
 #     )
     
@@ -376,7 +384,7 @@ for idx, row in top_50.iterrows():
 #     )
     
 #     info_idx = sample.fixed_entity_sentence_end_token_idx
-#     true_color_idx = COLOR_TO_IDX[sample.fixed_entity_color]
+#     true_city_idx = CITY_TO_IDX[sample.fixed_entity_city]
     
 #     with torch.no_grad():
 #         for pos in range(info_idx + 1, seq_len):
@@ -389,7 +397,7 @@ for idx, row in top_50.iterrows():
 #             logits = best_probe(state_tensor)
 #             pred = logits.argmax(dim=1).item()
             
-#             is_correct = (pred == true_color_idx)
+#             is_correct = (pred == true_city_idx)
 #             relative_pos = pos - info_idx
             
 #             if relative_pos not in eval_accuracies_by_position:
@@ -404,7 +412,7 @@ for idx, row in top_50.iterrows():
 
 # plt.figure(figsize=(12, 6))
 # plt.plot(positions, mean_accs, 'b-', linewidth=2, label='Mean Accuracy')
-# plt.axhline(y=1/n_colors, color='r', linestyle='--', label=f'Random Baseline ({1/n_colors:.3f})')
+# plt.axhline(y=1/n_cities, city='r', linestyle='--', label=f'Random Baseline ({1/n_cities:.3f})')
 # plt.xlabel('Tokens after Information Given')
 # plt.ylabel('Accuracy')
 # plt.title(f'Probe Accuracy vs Position After Information\nLayer {best_layer}, Head {best_head_idx}')
@@ -444,7 +452,7 @@ for idx, row in top_50.iterrows():
 #     if rolling_traj:
 #         plt.plot(rolling_pos, rolling_traj, alpha=0.6, linewidth=1.5)
 
-# plt.axhline(y=1/n_colors, color='r', linestyle='--', linewidth=2, label=f'Random Baseline ({1/n_colors:.3f})')
+# plt.axhline(y=1/n_cities, city='r', linestyle='--', linewidth=2, label=f'Random Baseline ({1/n_cities:.3f})')
 # plt.xlabel('Tokens after Information Given')
 # plt.ylabel('Accuracy')
 # plt.title(f'Individual Rolling Window Accuracies (window={window_size})\nLayer {best_layer}, Head {best_head_idx}')

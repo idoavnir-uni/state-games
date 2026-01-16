@@ -1,0 +1,421 @@
+# %% [markdown]
+# # Probe Next Token After Fixed Entity (Unembedding Method, Closed-Form)
+# 
+# This experiment:
+# 1. Creates sentences with single-token words (FIXED_ENTITY at varying positions)
+# 2. Extracts RWKV states at the END of the full sentence
+# 3. Uses model's output projection + unembedding matrix + w_right (solved closed-form)
+#    to predict the token that was at position (FIXED_ENTITY + DIST) in the sentence
+# 
+# **Probe model:** logits = (W_left_model @ state) @ w_right
+# - state: (head_size, head_size) per head = (64, 64)
+# - W_left_model: (n_classes, head_size) = (head_o_proj @ target_unembed).T - from model weights
+# - w_right: (head_size,) solved via least squares (closed-form)
+
+# %%
+import sys
+import os
+import torch
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+import random
+from dataclasses import dataclass
+from typing import List, Dict, Optional
+
+os.environ['CUDA_VISIBLE_DEVICES'] = '7'
+
+sys.path.insert(0, os.path.abspath('..'))
+
+from models.load_rwkv import load_rwkv_model, get_model_config
+from models.state_extractor_rwkv import RWKVStateExtractor
+
+print("Imports complete!")
+
+# %%
+# === CONFIGURATION ===
+NUM_ENTITIES = 30
+DIST = 5  # How many tokens after fixed entity to predict
+DATASET_SIZE = 2000 
+
+# %%
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Using device: {device}")
+if device == "cuda":
+    print(f"GPU Name: {torch.cuda.get_device_name(0)}")
+
+print("\nLoading RWKV model...")
+model, tokenizer = load_rwkv_model(model_name="rwkv7-g1b-1.5b-20251202-ctx8192.pth")
+
+config = get_model_config(model)
+num_layers = config.get('num_layers')
+num_heads = config.get('num_heads')
+print(f"Model: {num_layers} layers, {num_heads} heads")
+
+extractor = RWKVStateExtractor(model, verbose=False)
+head_size = extractor.head_size
+n_embd = model.model.n_embd
+print(f"Head size: {head_size}, Hidden size: {n_embd}")
+
+# %%
+# === FIND SINGLE-TOKEN WORDS ===
+CANDIDATE_WORDS = [
+    # Cities
+    "Paris", "London", "Tokyo", "Berlin", "Madrid", "Rome", "Vienna", "Dublin",
+    "Sydney", "Boston", "Denver", "Seattle", "Miami", "Dallas", "Austin",
+    "Portland", "Phoenix", "Detroit", "Atlanta", "Chicago", "Houston",
+    # Colors
+    "red", "blue", "green", "yellow", "orange", "purple", "pink", "brown",
+    "black", "white", "gray", "gold", "silver",
+    # Animals
+    "dog", "cat", "bird", "fish", "lion", "tiger", "bear", "wolf", "fox",
+    "deer", "mouse", "horse", "cow", "pig", "sheep", "goat", "duck",
+    "eagle", "hawk", "owl", "snake", "frog", "crab", "shark", "whale",
+    # Common nouns
+    "book", "tree", "rock", "lake", "river", "ocean", "forest",
+    "garden", "house", "castle", "bridge", "tower", "park", "beach",
+    # Food
+    "apple", "grape", "lemon", "cherry", "peach",
+    "bread", "cheese", "butter", "milk", "coffee", "water", "wine", "beer",
+]
+print(f"Candidate words: {len(CANDIDATE_WORDS)}")
+
+# %%
+print("Finding single-token words (with space prefix)...")
+single_token_words = []
+word_to_token_id = {}
+
+for word in CANDIDATE_WORDS:
+    tokens_with_space = tokenizer.encode(" " + word)
+    
+    if len(tokens_with_space) == 1:
+        single_token_words.append(word)
+        word_to_token_id[word] = tokens_with_space[0]
+
+print(f"Found {len(single_token_words)} single-token words:")
+for word in single_token_words[:15]:
+    decoded = tokenizer.decode([word_to_token_id[word]])
+    print(f"  '{word}': token_id={word_to_token_id[word]}, decoded='{decoded}'")
+if len(single_token_words) > 15:
+    print(f"  ... and {len(single_token_words) - 15} more")
+
+if len(single_token_words) < NUM_ENTITIES + 1:
+    raise ValueError(f"Not enough single-token words! Need {NUM_ENTITIES + 1}, have {len(single_token_words)}")
+
+FIXED_ENTITY = single_token_words[0]
+TARGET_WORDS = single_token_words[1:NUM_ENTITIES + 1]
+
+print(f"\nFIXED_ENTITY: '{FIXED_ENTITY}' (token_id={word_to_token_id[FIXED_ENTITY]})")
+print(f"TARGET_WORDS ({len(TARGET_WORDS)}): {TARGET_WORDS[:10]}...")
+
+# %%
+@dataclass
+class Sample:
+    text: str
+    input_ids: torch.Tensor
+    fixed_entity_token_idx: int
+    target_word: str
+    target_token_idx: int
+
+
+def create_dataset(
+    tokenizer,
+    target_words: List[str],
+    fixed_entity: str,
+    word_to_token_id: Dict[str, int],
+    dist: int,
+    size: int,
+    n_words_per_sentence: int = 15,
+    seed: int = 42
+) -> List[Sample]:
+    """Create dataset with sentences and target tokens at position (fixed_entity + dist)."""
+    rng = random.Random(seed)
+    samples = []
+    skipped = 0
+    
+    all_words = [fixed_entity] + target_words
+    
+    for i in tqdm(range(size), desc="Generating samples"):
+        max_fixed_pos = n_words_per_sentence - dist - 2
+        fixed_pos = rng.randint(0, max(0, max_fixed_pos))
+        
+        target_word = rng.choice(target_words)
+        
+        sentence_words = []
+        for j in range(n_words_per_sentence):
+            if j == fixed_pos:
+                sentence_words.append(fixed_entity)
+            elif j == fixed_pos + dist:
+                sentence_words.append(target_word)
+            else:
+                sentence_words.append(rng.choice(all_words))
+        
+        text = " ".join(sentence_words) + "."
+        
+        tokens = tokenizer.encode(text)
+        input_ids = torch.tensor([tokens])
+        
+        fixed_token_id = word_to_token_id[fixed_entity]
+        target_token_id = word_to_token_id[target_word]
+        
+        fixed_entity_token_idx = None
+        for idx, tok in enumerate(tokens):
+            if tok == fixed_token_id:
+                fixed_entity_token_idx = idx
+                break
+        
+        if fixed_entity_token_idx is None:
+            skipped += 1
+            continue
+        
+        target_token_idx = None
+        for offset in range(dist, dist + 3):
+            check_idx = fixed_entity_token_idx + offset
+            if check_idx < len(tokens) and tokens[check_idx] == target_token_id:
+                target_token_idx = check_idx
+                break
+        
+        if target_token_idx is None:
+            skipped += 1
+            continue
+        
+        samples.append(Sample(
+            text=text,
+            input_ids=input_ids,
+            fixed_entity_token_idx=fixed_entity_token_idx,
+            target_word=target_word,
+            target_token_idx=target_token_idx,
+        ))
+    
+    print(f"Created {len(samples)} samples, skipped {skipped}")
+    return samples
+
+
+print(f"\nCreating dataset...")
+print(f"  NUM_ENTITIES: {NUM_ENTITIES}")
+print(f"  DIST: {DIST}")
+print(f"  FIXED_ENTITY: {FIXED_ENTITY}")
+print(f"  DATASET_SIZE: {DATASET_SIZE}")
+
+dataset = create_dataset(
+    tokenizer=tokenizer,
+    target_words=TARGET_WORDS,
+    fixed_entity=FIXED_ENTITY,
+    word_to_token_id=word_to_token_id,
+    dist=DIST,
+    size=DATASET_SIZE,
+    n_words_per_sentence=15,
+    seed=42,
+)
+
+if len(dataset) == 0:
+    raise ValueError("No valid samples created! Check tokenization.")
+
+print(f"\nValid samples: {len(dataset)}")
+
+# Show examples
+print("\n=== Sample Examples ===")
+for i in range(min(3, len(dataset))):
+    s = dataset[i]
+    tokens = s.input_ids.tolist()[0]
+    print(f"Example {i+1}:")
+    print(f"  Text: {s.text[:80]}...")
+    print(f"  Fixed '{FIXED_ENTITY}' at token idx: {s.fixed_entity_token_idx}")
+    print(f"  Target '{s.target_word}' at token idx: {s.target_token_idx}")
+    print(f"  Token at fixed idx: {tokenizer.decode([tokens[s.fixed_entity_token_idx]])}")
+    print(f"  Token at target idx: {tokenizer.decode([tokens[s.target_token_idx]])}")
+    print()
+
+# %%
+# === PREPARE FOR TRAINING ===
+TARGET_TOKEN_IDS = torch.tensor([word_to_token_id[w] for w in TARGET_WORDS])
+WORD_TO_IDX = {word: idx for idx, word in enumerate(TARGET_WORDS)}
+n_classes = len(TARGET_WORDS)
+
+print(f"Number of classes: {n_classes}")
+print(f"Random baseline accuracy: {1/n_classes:.3f}")
+
+# %%
+# === EXTRACT STATES ===
+print(f"\nExtracting states at END of sentence (probing for token at FIXED_ENTITY + {DIST})...")
+
+metadata_rows = []
+all_states = np.zeros((len(dataset), num_layers, num_heads, head_size, head_size), dtype=np.float16)
+
+for idx, sample in enumerate(tqdm(dataset, desc="Extracting states")):
+    final_states = extractor.extract_final_states(sample.input_ids)
+    
+    metadata_rows.append({
+        'text': sample.text,
+        'target_word': sample.target_word,
+        'fixed_entity_idx': sample.fixed_entity_token_idx,
+        'target_idx': sample.target_token_idx,
+    })
+    
+    for layer_idx in range(num_layers):
+        layer_state = final_states[layer_idx]
+        all_states[idx, layer_idx] = layer_state.cpu().to(torch.float16).numpy()
+
+df = pd.DataFrame(metadata_rows)
+print(f"\nDataframe shape: {df.shape}")
+print(f"States shape: {all_states.shape}")
+
+print("\n=== Dataset Statistics ===")
+print(f"Target word distribution:\n{df['target_word'].value_counts().head(10)}")
+
+# %%
+# === PREPARE LABELS AND UNEMBEDDING ===
+labels = torch.tensor([WORD_TO_IDX[w] for w in df['target_word']])
+print(f"Labels shape: {labels.shape}")
+
+# Get unembedding matrix from model (LM head)
+lm_head = model.model.z['head.weight'].detach()
+print(f"LM head shape: {lm_head.shape}")
+
+# Extract columns for target word tokens
+target_unembed = lm_head[:, TARGET_TOKEN_IDS].float().to(device)  # (hidden_size, n_classes)
+print(f"Target unembedding shape: {target_unembed.shape}")
+
+# %%
+def get_head_o_proj(model, layer_idx, head_idx, head_size=64, n_embd=2048):
+    """Extract the output projection weights for a specific head."""
+    z = model.model.z
+    o_proj = z[f'blocks.{layer_idx}.att.output.weight'].detach().float()
+    start_idx = head_idx * head_size
+    end_idx = (head_idx + 1) * head_size
+    head_o_proj = o_proj[start_idx:end_idx, :]  # (64, 2048)
+    return head_o_proj
+
+def get_W_left_model(head_o_proj, target_unembed):
+    """
+    Compute W_left_model from model weights.
+    
+    head_o_proj: (head_size, hidden_size) = (64, 2048)
+    target_unembed: (hidden_size, n_classes) = (2048, n_classes)
+    
+    M = head_o_proj @ target_unembed: (64, n_classes)
+    W_left_model = M.T: (n_classes, 64)
+    """
+    M = head_o_proj @ target_unembed
+    W_left_model = M.T
+    return W_left_model
+
+def precompute_transformed_states(states, W_left_model):
+    """
+    Precompute A = W_left_model @ state
+    
+    states: (batch, head_size, head_size) = (batch, 64, 64)
+    W_left_model: (n_classes, head_size) = (n_classes, 64)
+    
+    Returns A: (batch, n_classes, head_size) = (batch, n_classes, 64)
+    """
+    A = torch.einsum('cd,bdk->bck', W_left_model, states)
+    return A
+
+def solve_w_right_closed_form(A, labels, n_classes):
+    """
+    Solve for w_right in closed form using least squares.
+    
+    A: (batch, n_classes, head_size) - transformed states
+    labels: (batch,) - class indices
+    
+    We want: logits = einsum('bck, k -> bc', A, w_right) ≈ one_hot(labels)
+    """
+    batch_size = A.shape[0]
+    head_size = A.shape[2]
+    
+    # Create one-hot targets
+    Y = torch.zeros(batch_size, n_classes, device=A.device)
+    Y.scatter_(1, labels.unsqueeze(1), 1.0)  # (batch, n_classes)
+    
+    # Reshape for least squares: A_flat @ w_right = Y_flat
+    A_flat = A.reshape(-1, head_size)  # (batch * n_classes, head_size)
+    Y_flat = Y.reshape(-1)  # (batch * n_classes,)
+    
+    # Solve least squares: w_right = (A^T A)^{-1} A^T Y
+    w_right = torch.linalg.lstsq(A_flat, Y_flat).solution  # (head_size,)
+    
+    return w_right
+
+def evaluate_w_right(A, labels, w_right):
+    """Compute accuracy given w_right and transformed states A."""
+    logits = torch.einsum('bck,k->bc', A, w_right)
+    preds = logits.argmax(dim=1)
+    acc = (preds == labels).float().mean().item()
+    return acc
+
+def solve_probe(states_np, labels, layer_idx, head_idx):
+    """Solve for w_right in closed form for a given layer/head."""
+    states = torch.tensor(states_np[:, layer_idx, head_idx], dtype=torch.float32).to(device)
+    
+    n_samples = len(labels)
+    n_val = max(1, int(0.3 * n_samples))
+    indices = torch.randperm(n_samples)
+    
+    train_states = states[indices[n_val:]]
+    train_labels = labels[indices[n_val:]].to(device)
+    val_states = states[indices[:n_val]]
+    val_labels = labels[indices[:n_val]].to(device)
+    
+    # Get model weights for this head and compute W_left_model
+    head_o_proj = get_head_o_proj(model, layer_idx, head_idx, head_size, n_embd).to(device)
+    W_left_model = get_W_left_model(head_o_proj, target_unembed)
+    
+    # Precompute transformed states: A = W_left_model @ state
+    train_A = precompute_transformed_states(train_states, W_left_model)
+    val_A = precompute_transformed_states(val_states, W_left_model)
+    
+    # Solve in closed form for w_right
+    w_right = solve_w_right_closed_form(train_A, train_labels, n_classes)
+    
+    # Evaluate
+    train_acc = evaluate_w_right(train_A, train_labels, w_right)
+    val_acc = evaluate_w_right(val_A, val_labels, w_right)
+    
+    return val_acc, train_acc
+
+# %%
+print("\n" + "=" * 60)
+print(f"SOLVING PROBES (unembedding, closed-form): From END state, predict token at (FIXED_ENTITY + {DIST})")
+print("=" * 60)
+print(f"{'Layer':<6} {'Head':<6} {'Val Acc':<10} {'Train Acc':<10}")
+print("-" * 35)
+
+results = []
+for layer_idx in range(num_layers):
+    for head_idx in range(num_heads):
+        val_acc, train_acc = solve_probe(all_states, labels, layer_idx, head_idx)
+        results.append({
+            'layer': layer_idx,
+            'head': head_idx,
+            'val_acc': val_acc,
+            'train_acc': train_acc,
+        })
+        print(f"L{layer_idx:<5} H{head_idx:<5} {val_acc:<10.3f} {train_acc:<10.3f}")
+
+# %%
+results_df = pd.DataFrame(results)
+print("\n=== Best Performing Heads ===")
+top_50 = results_df.sort_values('val_acc', ascending=False).head(50)
+for idx, row in top_50.iterrows():
+    print(f"L{row['layer']:<5} H{row['head']:<5} {row['val_acc']:<10.3f} {row['train_acc']:<10.3f}")
+
+os.makedirs('results', exist_ok=True)
+top_50.to_csv(f'results/result_next_token_unembed_dist{DIST}.csv', index=False)
+print(f"\nResults saved to results/result_next_token_unembed_dist{DIST}.csv")
+
+# %%
+print("\n=== SUMMARY ===")
+print(f"Configuration:")
+print(f"  NUM_ENTITIES: {NUM_ENTITIES}")
+print(f"  DIST: {DIST}")
+print(f"  FIXED_ENTITY: {FIXED_ENTITY}")
+print(f"  DATASET_SIZE: {len(dataset)}")
+print(f"  n_classes: {n_classes}")
+print(f"\nTask: From END-of-sentence state, predict token at (FIXED_ENTITY + {DIST})")
+print(f"Method: Unembedding (W_left from model, w_right solved closed-form)")
+print(f"Best head: L{int(top_50.iloc[0]['layer'])}, H{int(top_50.iloc[0]['head'])}")
+print(f"Best val accuracy: {top_50.iloc[0]['val_acc']:.3f}")
+print(f"Random baseline: {1/n_classes:.3f}")
+
+# %%
