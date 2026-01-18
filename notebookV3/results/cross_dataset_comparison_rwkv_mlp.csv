@@ -1,0 +1,9 @@
+heads_from,heads,tested_on,original,switched,neither,switch_rate
+FavoriteColor RWKV,"[(15, 11), (15, 13), (15, 2), (14, 23), (15, 27), (9, 18), (15, 1), (14, 18), (12, 18), (15, 8)]",FavoriteColor,7,19,24,38.0
+FavoriteColor RWKV,"[(15, 11), (15, 13), (15, 2), (14, 23), (15, 27), (9, 18), (15, 1), (14, 18), (12, 18), (15, 8)]",LivesInCity,14,19,17,38.0
+LivesInCity RWKV,"[(15, 11), (14, 18), (15, 13), (15, 2), (15, 29), (3, 18), (14, 23), (11, 21), (15, 27), (9, 18)]",FavoriteColor,8,19,23,38.0
+LivesInCity RWKV,"[(15, 11), (14, 18), (15, 13), (15, 2), (15, 29), (3, 18), (14, 23), (11, 21), (15, 27), (9, 18)]",LivesInCity,28,9,13,18.0
+BASELINE,[],FavoriteColor,45,0,5,0.0
+BASELINE,[],LivesInCity,48,1,1,2.0
+ALL HEADS,768 heads,FavoriteColor,0,38,12,76.0
+ALL HEADS,768 heads,LivesInCity,0,44,6,88.0

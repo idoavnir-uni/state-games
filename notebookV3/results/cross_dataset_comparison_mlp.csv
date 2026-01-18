@@ -1,0 +1,9 @@
+heads_from,heads,tested_on,original,switched,neither,switch_rate
+FavoriteColor MLP,"[(15, 11), (15, 2), (15, 13), (14, 23), (15, 27), (9, 18), (15, 1), (14, 18), (15, 8), (12, 18)]",FavoriteColor,7,19,24,38.0
+FavoriteColor MLP,"[(15, 11), (15, 2), (15, 13), (14, 23), (15, 27), (9, 18), (15, 1), (14, 18), (15, 8), (12, 18)]",LivesInCity,14,19,17,38.0
+LivesInCity MLP,"[(15, 11), (14, 18), (15, 13), (15, 2), (11, 21), (15, 29), (14, 23), (15, 27), (9, 18), (15, 18)]",FavoriteColor,8,19,23,38.0
+LivesInCity MLP,"[(15, 11), (14, 18), (15, 13), (15, 2), (11, 21), (15, 29), (14, 23), (15, 27), (9, 18), (15, 18)]",LivesInCity,28,9,13,18.0
+BASELINE,[],FavoriteColor,45,0,5,0.0
+BASELINE,[],LivesInCity,48,1,1,2.0
+ALL HEADS,768 heads,FavoriteColor,0,38,12,76.0
+ALL HEADS,768 heads,LivesInCity,0,44,6,88.0

@@ -1,14 +1,8 @@
 
 # %%
-# Cross-Dataset Head Testing
+# Cross-Dataset Head Testing - MLP Probes
 # 
-# Goal: Test if heads important for one task are important for that task only
-# 
-# We test:
-# - Heads from FavoriteColor probes on FavoriteColor samples
-# - Heads from FavoriteColor probes on LivesInCity samples
-# - Heads from LivesInCity probes on LivesInCity samples
-# - Heads from LivesInCity probes on FavoriteColor samples
+# Goal: Test if MLP probe heads important for one task are important for that task only
 
 import sys
 import os
@@ -16,6 +10,7 @@ import torch
 import pandas as pd
 from typing import List, Tuple, Dict
 import random
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 
 sys.path.insert(0, os.path.abspath('..'))
 
@@ -25,7 +20,7 @@ from datasets.animal_names import ANIMAL_NAMES
 from datasets.lives_in_city_dataset import DEFAULT_CITIES
 
 # %%
-NUM_HEADS_TO_TEST = 16  
+NUM_HEADS_TO_TEST = 5
 NUM_SAMPLES_TO_TEST = 50
 
 # %%
@@ -40,32 +35,24 @@ print(f"\nModel info: {n_layer} layers, {n_head} heads, head_size={head_size}")
 
 # %%
 print("\n" + "=" * 80)
-print("LOADING PROBE RESULTS")
+print("LOADING MLP PROBE RESULTS")
 print("=" * 80)
 
 def df_to_heads(df: pd.DataFrame, n: int) -> List[Tuple[int, int]]:
     top_n = df.head(n)
     return [(int(row['layer']), int(row['head'])) for _, row in top_n.iterrows()]
 
-# Load results from FavoriteColor probes
-results_color_linear = pd.read_csv('results/result_both_linear.csv')
-results_color_wrong = pd.read_csv('results/result_both_linear_wrong.csv')
+# Load MLP results from FavoriteColor
+results_color_mlp = pd.read_csv('results/result_mlp.csv')
+heads_color_mlp = df_to_heads(results_color_mlp, NUM_HEADS_TO_TEST)
+print(f"\nFavoriteColor MLP heads: {heads_color_mlp}")
+print(f"  Best val_acc: {results_color_mlp.iloc[0]['val_acc']:.3f}")
 
-heads_color_linear = df_to_heads(results_color_linear, NUM_HEADS_TO_TEST)
-heads_color_wrong = df_to_heads(results_color_wrong, NUM_HEADS_TO_TEST)
-
-print(f"\nFavoriteColor heads (both_linear): {heads_color_linear}")
-print(f"FavoriteColor heads (wrong): {heads_color_wrong}")
-
-# Load results from LivesInCity probes
-results_city_linear = pd.read_csv('../notebookV3_other_dataset/results/result_both_linear.csv')
-results_city_wrong = pd.read_csv('../notebookV3_other_dataset/results/result_both_linear_wrong.csv')
-
-heads_city_linear = df_to_heads(results_city_linear, NUM_HEADS_TO_TEST)
-heads_city_wrong = df_to_heads(results_city_wrong, NUM_HEADS_TO_TEST)
-
-print(f"\nLivesInCity heads (both_linear): {heads_city_linear}")
-print(f"LivesInCity heads (wrong): {heads_city_wrong}")
+# Load MLP results from LivesInCity
+results_city_mlp = pd.read_csv('../notebookV3_other_dataset/results/result_mlp.csv')
+heads_city_mlp = df_to_heads(results_city_mlp, NUM_HEADS_TO_TEST)
+print(f"\nLivesInCity MLP heads: {heads_city_mlp}")
+print(f"  Best val_acc: {results_city_mlp.iloc[0]['val_acc']:.3f}")
 
 # %%
 # Helper functions
@@ -295,47 +282,62 @@ def run_hook_experiment(sample_pairs, heads_to_replace, model, tokenizer, n_laye
 
 # %%
 print("\n" + "=" * 80)
-print("CROSS-DATASET HEAD TESTING")
+print("CROSS-DATASET HEAD TESTING - MLP PROBES")
 print("=" * 80)
 
 all_results = []
 n_total = NUM_SAMPLES_TO_TEST
 
-# Define all head sets to test
-head_sets = {
-    'color_linear': (heads_color_linear, 'FavoriteColor both_linear'),
-    'color_wrong': (heads_color_wrong, 'FavoriteColor wrong'),
-    'city_linear': (heads_city_linear, 'LivesInCity both_linear'),
-    'city_wrong': (heads_city_wrong, 'LivesInCity wrong'),
-}
+# Test FavoriteColor MLP heads on both datasets
+print("\nTesting FavoriteColor MLP heads...")
+result = run_hook_experiment(sample_pairs_color, heads_color_mlp, model, tokenizer, n_layer)
+all_results.append({
+    'heads_from': 'FavoriteColor MLP',
+    'heads': str(heads_color_mlp),
+    'tested_on': 'FavoriteColor',
+    'original': result['original'],
+    'switched': result['switched'],
+    'neither': result['neither'],
+    'switch_rate': result['switched'] / n_total * 100,
+})
 
-# Test each head set on each dataset
-for heads_key, (heads, heads_source) in head_sets.items():
-    # Test on FavoriteColor
-    result = run_hook_experiment(sample_pairs_color, heads, model, tokenizer, n_layer)
-    all_results.append({
-        'heads_from': heads_source,
-        'heads': str(heads),
-        'tested_on': 'FavoriteColor',
-        'original': result['original'],
-        'switched': result['switched'],
-        'neither': result['neither'],
-        'switch_rate': result['switched'] / n_total * 100,
-    })
-    
-    # Test on LivesInCity
-    result = run_hook_experiment(sample_pairs_city, heads, model, tokenizer, n_layer)
-    all_results.append({
-        'heads_from': heads_source,
-        'heads': str(heads),
-        'tested_on': 'LivesInCity',
-        'original': result['original'],
-        'switched': result['switched'],
-        'neither': result['neither'],
-        'switch_rate': result['switched'] / n_total * 100,
-    })
+result = run_hook_experiment(sample_pairs_city, heads_color_mlp, model, tokenizer, n_layer)
+all_results.append({
+    'heads_from': 'FavoriteColor MLP',
+    'heads': str(heads_color_mlp),
+    'tested_on': 'LivesInCity',
+    'original': result['original'],
+    'switched': result['switched'],
+    'neither': result['neither'],
+    'switch_rate': result['switched'] / n_total * 100,
+})
+
+# Test LivesInCity MLP heads on both datasets
+print("Testing LivesInCity MLP heads...")
+result = run_hook_experiment(sample_pairs_color, heads_city_mlp, model, tokenizer, n_layer)
+all_results.append({
+    'heads_from': 'LivesInCity MLP',
+    'heads': str(heads_city_mlp),
+    'tested_on': 'FavoriteColor',
+    'original': result['original'],
+    'switched': result['switched'],
+    'neither': result['neither'],
+    'switch_rate': result['switched'] / n_total * 100,
+})
+
+result = run_hook_experiment(sample_pairs_city, heads_city_mlp, model, tokenizer, n_layer)
+all_results.append({
+    'heads_from': 'LivesInCity MLP',
+    'heads': str(heads_city_mlp),
+    'tested_on': 'LivesInCity',
+    'original': result['original'],
+    'switched': result['switched'],
+    'neither': result['neither'],
+    'switch_rate': result['switched'] / n_total * 100,
+})
 
 # Add baselines
+print("Running baselines...")
 for dataset_name, samples in [('FavoriteColor', sample_pairs_color), ('LivesInCity', sample_pairs_city)]:
     result = run_hook_experiment(samples, [], model, tokenizer, n_layer)
     all_results.append({
@@ -349,6 +351,7 @@ for dataset_name, samples in [('FavoriteColor', sample_pairs_color), ('LivesInCi
     })
 
 # Add all heads
+print("Running all heads...")
 all_heads = [(layer, head) for layer in range(n_layer) for head in range(n_head)]
 for dataset_name, samples in [('FavoriteColor', sample_pairs_color), ('LivesInCity', sample_pairs_city)]:
     result = run_hook_experiment(samples, all_heads, model, tokenizer, n_layer)
@@ -364,38 +367,32 @@ for dataset_name, samples in [('FavoriteColor', sample_pairs_color), ('LivesInCi
 
 # %%
 print("\n" + "=" * 100)
-print("FINAL RESULTS TABLE")
+print("FINAL RESULTS TABLE - MLP PROBES")
 print("=" * 100)
 
 results_df = pd.DataFrame(all_results)
 
-print(f"\n{'Heads From':<30} {'Tested On':<15} {'Original':>10} {'Switched':>10} {'Neither':>10} {'Switch%':>10}")
-print("-" * 95)
+print(f"\n{'Heads From':<25} {'Tested On':<15} {'Original':>10} {'Switched':>10} {'Neither':>10} {'Switch%':>10}")
+print("-" * 85)
 
 for _, row in results_df.iterrows():
-    print(f"{row['heads_from']:<30} {row['tested_on']:<15} {row['original']:>10} {row['switched']:>10} {row['neither']:>10} {row['switch_rate']:>9.1f}%")
+    print(f"{row['heads_from']:<25} {row['tested_on']:<15} {row['original']:>10} {row['switched']:>10} {row['neither']:>10} {row['switch_rate']:>9.1f}%")
 
 # %%
 print("\n" + "=" * 100)
-print("ANALYSIS: SAME-TASK vs CROSS-TASK")
+print("ANALYSIS: SAME-TASK vs CROSS-TASK (MLP)")
 print("=" * 100)
 
-# Organize results for easy comparison
-print("\n### FavoriteColor Heads ###")
-print(f"  Tested on FavoriteColor (SAME): {results_df[(results_df['heads_from']=='FavoriteColor both_linear') & (results_df['tested_on']=='FavoriteColor')]['switch_rate'].values[0]:.1f}% switch")
-print(f"  Tested on LivesInCity (CROSS):  {results_df[(results_df['heads_from']=='FavoriteColor both_linear') & (results_df['tested_on']=='LivesInCity')]['switch_rate'].values[0]:.1f}% switch")
+print("\n### FavoriteColor MLP Heads ###")
+print(f"  Tested on FavoriteColor (SAME): {results_df[(results_df['heads_from']=='FavoriteColor MLP') & (results_df['tested_on']=='FavoriteColor')]['switch_rate'].values[0]:.1f}% switch")
+print(f"  Tested on LivesInCity (CROSS):  {results_df[(results_df['heads_from']=='FavoriteColor MLP') & (results_df['tested_on']=='LivesInCity')]['switch_rate'].values[0]:.1f}% switch")
 
-print("\n### LivesInCity Heads ###")
-print(f"  Tested on LivesInCity (SAME):   {results_df[(results_df['heads_from']=='LivesInCity both_linear') & (results_df['tested_on']=='LivesInCity')]['switch_rate'].values[0]:.1f}% switch")
-print(f"  Tested on FavoriteColor (CROSS): {results_df[(results_df['heads_from']=='LivesInCity both_linear') & (results_df['tested_on']=='FavoriteColor')]['switch_rate'].values[0]:.1f}% switch")
-
-print("\n### Baselines ###")
-print(f"  FavoriteColor baseline: {results_df[(results_df['heads_from']=='BASELINE') & (results_df['tested_on']=='FavoriteColor')]['switch_rate'].values[0]:.1f}% switch")
-print(f"  LivesInCity baseline:   {results_df[(results_df['heads_from']=='BASELINE') & (results_df['tested_on']=='LivesInCity')]['switch_rate'].values[0]:.1f}% switch")
+print("\n### LivesInCity MLP Heads ###")
+print(f"  Tested on LivesInCity (SAME):   {results_df[(results_df['heads_from']=='LivesInCity MLP') & (results_df['tested_on']=='LivesInCity')]['switch_rate'].values[0]:.1f}% switch")
+print(f"  Tested on FavoriteColor (CROSS): {results_df[(results_df['heads_from']=='LivesInCity MLP') & (results_df['tested_on']=='FavoriteColor')]['switch_rate'].values[0]:.1f}% switch")
 
 # %%
-# Save results
-results_df.to_csv('results/cross_dataset_comparison.csv', index=False)
-print(f"\nResults saved to results/cross_dataset_comparison.csv")
+results_df.to_csv('results/cross_dataset_comparison_mlp.csv', index=False)
+print(f"\nResults saved to results/cross_dataset_comparison_mlp.csv")
 
 # %%
