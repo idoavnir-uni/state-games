@@ -2,8 +2,8 @@
 # # Comparison: Standalone vs Combined Dataset Probing
 # 
 # This notebook compares probe accuracy between:
-# 1. Standalone FavoriteAnimalDataset 
-# 2. CombinedDataset with configurable animal/color ratio (fixed entity from animals)
+# 1. Standalone FavoriteColorDataset 
+# 2. CombinedDataset with configurable color/city ratio (fixed entity from colors)
 
 # %%
 import sys
@@ -23,13 +23,15 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from models.load_rwkv import load_rwkv_model, get_model_config
 from models.state_extractor_rwkv import RWKVStateExtractor
-from datasets.favorite_animal_dataset import FavoriteAnimalDataset
+from datasets.favorite_color_dataset import FavoriteColorDataset
+from datasets.lives_in_city_dataset import LivesInCityDataset
 from datasets.combined_dataset import (
     CombinedDataset,
     DatasetConfig,
     FAVORITE_COLOR_CONFIG,
-    FAVORITE_ANIMAL_CONFIG,
 )
+from datasets.names import FAMOUS_NAMES
+from datasets.animal_names import ANIMAL_NAMES
 
 print("Imports complete!")
 
@@ -70,58 +72,59 @@ print(f"Hidden size: {n_embd}")
 # %%
 DATASET_SIZE = 1000
 N_ENTITIES = 400
-N_ANIMALS = 10
-FIXED_ENTITY = "Lady Gaga"
+N_COLORS = 10
+FIXED_ENTITY = "Jeff Bezos"  # For color dataset
 
-# Combined dataset ratio
-N_ANIMALS_COMBINED = N_ENTITIES // 30
-N_COLORS_COMBINED = N_ENTITIES - N_ANIMALS_COMBINED
-ANIMAL_RATIO = f"{N_ANIMALS_COMBINED}/{N_ENTITIES}"
+# Combined dataset ratio (colors vs cities)
+N_COLORS_COMBINED = N_ENTITIES // 30
+N_CITIES_COMBINED = N_ENTITIES - N_COLORS_COMBINED
+COLOR_RATIO = f"{N_COLORS_COMBINED}/{N_ENTITIES}"
 
-ANIMALS = ["Cat", "Dog", "Bat", "Fox", "Ant", "Fly", "Rat", "Fish", "Wolf", "Spider"]
+COLORS = ["red", "blue", "green", "yellow", "orange", "purple", "pink", "black", "white", "brown"]
+CITIES = ["Paris", "London", "Chicago", "Boston", "Miami", "Austin", "Houston", "York", "Bern", "Gary"]
 
 # %% [markdown]
 # ## 4. Create Both Datasets
 
 # %%
-print("Creating standalone FavoriteAnimalDataset...")
-standalone_dataset = FavoriteAnimalDataset(
+print("Creating standalone FavoriteColorDataset...")
+standalone_dataset = FavoriteColorDataset(
     tokenizer=tokenizer,
     size=DATASET_SIZE,
     n_entities=N_ENTITIES,
-    n_animals=N_ANIMALS,
+    n_colors=N_COLORS,
     fixed_entity_name=FIXED_ENTITY,
     seed=42,
 )
 print(f"Standalone dataset: {len(standalone_dataset)} samples")
 print(f"Fixed entity: {standalone_dataset.fixed_entity_name}")
-print(f"Animals: {standalone_dataset.animals}")
+print(f"Colors: {standalone_dataset.colors}")
 
 # %%
-print(f"\nCreating {ANIMAL_RATIO} CombinedDataset ({N_ANIMALS_COMBINED} animals + {N_COLORS_COMBINED} colors)...")
-
-animal_config = DatasetConfig(
-    sentence_template="{name}'s favorite animal is {value}.",
-    values=ANIMALS,
-    fixed_entity_name=FIXED_ENTITY,
-    names_pool=FAVORITE_ANIMAL_CONFIG.names_pool,
-    value_key="animal",
-)
+print(f"\nCreating {COLOR_RATIO} CombinedDataset ({N_COLORS_COMBINED} colors + {N_CITIES_COMBINED} cities)...")
 
 color_config = DatasetConfig(
     sentence_template="{name}'s favorite color is {value}.",
-    values=FAVORITE_COLOR_CONFIG.values,
-    fixed_entity_name="Jeff Bezos",
-    names_pool=FAVORITE_COLOR_CONFIG.names_pool,
+    values=COLORS,
+    fixed_entity_name=FIXED_ENTITY,
+    names_pool=FAMOUS_NAMES,
     value_key="color",
+)
+
+city_config = DatasetConfig(
+    sentence_template="{name} lives in {value}.",
+    values=CITIES,
+    fixed_entity_name="bat",  # LivesInCityDataset uses animal names
+    names_pool=ANIMAL_NAMES,
+    value_key="city",
 )
 
 combined_dataset = CombinedDataset(
     tokenizer=tokenizer,
-    dataset_configs={"animal": animal_config, "color": color_config},
+    dataset_configs={"color": color_config, "city": city_config},
     size=DATASET_SIZE,
-    sentences_per_config={"animal": N_ANIMALS_COMBINED, "color": N_COLORS_COMBINED},
-    fixed_entity_source="animal",
+    sentences_per_config={"color": N_COLORS_COMBINED, "city": N_CITIES_COMBINED},
+    fixed_entity_source="color",
     shuffle_sentences=True,
     seed=42,
 )
@@ -129,35 +132,35 @@ print(f"Combined dataset: {len(combined_dataset)} samples")
 print(f"Sentences per config: {combined_dataset.sentences_per_config}")
 
 # %% [markdown]
-# ## 5. Verify Animals are Single Tokens
+# ## 5. Verify Colors are Single Tokens
 
 # %%
-print("\nVerifying animals are single tokens...")
-animal_token_ids = {}
+print("\nVerifying colors are single tokens...")
+color_token_ids = {}
 all_single_tokens = True
 
-for animal in ANIMALS:
-    tokens = tokenizer.encode(animal)
+for color in COLORS:
+    tokens = tokenizer.encode(color)
     is_single = len(tokens) == 1
     
     if is_single:
-        animal_token_ids[animal] = tokens[0]
+        color_token_ids[color] = tokens[0]
         token_str = tokenizer.decode([tokens[0]])
-        print(f"  {animal}: token_id={tokens[0]}, decoded='{token_str}' ✓")
+        print(f"  {color}: token_id={tokens[0]}, decoded='{token_str}' ✓")
     else:
         all_single_tokens = False
         decoded = [tokenizer.decode([t]) for t in tokens]
-        print(f"  {animal}: {len(tokens)} tokens {tokens} -> {decoded} ✗")
+        print(f"  {color}: {len(tokens)} tokens {tokens} -> {decoded} ✗")
 
 if all_single_tokens:
-    print("\n✓ All animals are single tokens!")
+    print("\n✓ All colors are single tokens!")
 else:
-    print("\n✗ Some animals are NOT single tokens.")
-    raise ValueError("Not all animals are single tokens")
+    print("\n✗ Some colors are NOT single tokens.")
+    raise ValueError("Not all colors are single tokens")
 
-ANIMAL_TOKEN_IDS = torch.tensor([animal_token_ids[a] for a in ANIMALS])
-ANIMAL_TO_IDX = {animal: idx for idx, animal in enumerate(ANIMALS)}
-n_animals = len(ANIMALS)
+COLOR_TOKEN_IDS = torch.tensor([color_token_ids[c] for c in COLORS])
+COLOR_TO_IDX = {color: idx for idx, color in enumerate(COLORS)}
+n_colors = len(COLORS)
 
 # %% [markdown]
 # ## 6. Extract States for Both Datasets
@@ -177,14 +180,14 @@ def extract_dataset_states(dataset, extractor, num_layers, num_heads, head_size,
         if is_combined:
             metadata_rows.append({
                 'sentence': sample.text,
-                'target_animal': sample.fixed_entity_value,
+                'target_color': sample.fixed_entity_value,
                 'information_given_idx': sample.fixed_entity_sentence_end_token_idx,
                 'sentence_with_info_num': sample.fixed_entity_sentence_number,
             })
         else:
             metadata_rows.append({
                 'sentence': sample.text,
-                'target_animal': sample.fixed_entity_animal,
+                'target_color': sample.fixed_entity_color,
                 'information_given_idx': sample.fixed_entity_sentence_end_token_idx,
                 'sentence_with_info_num': sample.fixed_entity_sentence_number,
             })
@@ -215,8 +218,8 @@ print(f"Combined - Metadata shape: {combined_df.shape}, States shape: {combined_
 
 # %%
 lm_head = model.model.z['head.weight'].detach()
-animal_unembed = lm_head[:, ANIMAL_TOKEN_IDS].float().to(device)
-print(f"Animal unembedding shape: {animal_unembed.shape}")
+color_unembed = lm_head[:, COLOR_TOKEN_IDS].float().to(device)
+print(f"Color unembedding shape: {color_unembed.shape}")
 
 # %%
 def get_head_o_proj(model, layer_idx, head_idx, head_size=64, n_embd=2048):
@@ -284,8 +287,8 @@ def solve_probe(states_np, labels, layer_idx, head_idx, model, unembed, head_siz
 # ## 8. Train Probes for Both Datasets
 
 # %%
-def train_all_probes(states_np, df, model, unembed, head_size, n_embd, n_classes, animal_to_idx, name=""):
-    labels = torch.tensor([animal_to_idx[a] for a in df['target_animal']])
+def train_all_probes(states_np, df, model, unembed, head_size, n_embd, n_classes, color_to_idx, name=""):
+    labels = torch.tensor([color_to_idx[c] for c in df['target_color']])
     
     print(f"\n=== Training probes for {name} ===")
     results = []
@@ -313,14 +316,14 @@ def train_all_probes(states_np, df, model, unembed, head_size, n_embd, n_classes
 
 # %%
 standalone_results, standalone_w_rights, standalone_labels = train_all_probes(
-    standalone_states, standalone_df, model, animal_unembed, 
-    head_size, n_embd, n_animals, ANIMAL_TO_IDX, name="Standalone"
+    standalone_states, standalone_df, model, color_unembed, 
+    head_size, n_embd, n_colors, COLOR_TO_IDX, name="Standalone"
 )
 
 # %%
 combined_results, combined_w_rights, combined_labels = train_all_probes(
-    combined_states, combined_df, model, animal_unembed, 
-    head_size, n_embd, n_animals, ANIMAL_TO_IDX, name="Combined"
+    combined_states, combined_df, model, color_unembed, 
+    head_size, n_embd, n_colors, COLOR_TO_IDX, name="Combined"
 )
 
 # %% [markdown]
@@ -371,13 +374,13 @@ def retrain_best_probe(states_np, labels, best_layer, best_head_idx, model, unem
 # %%
 standalone_w_right, standalone_W_left, standalone_train_acc, standalone_val_acc = retrain_best_probe(
     standalone_states, standalone_labels, best_layer, best_head_idx,
-    model, animal_unembed, head_size, n_embd, n_animals
+    model, color_unembed, head_size, n_embd, n_colors
 )
 print(f"Standalone - Train: {standalone_train_acc:.3f}, Val: {standalone_val_acc:.3f}")
 
 combined_w_right, combined_W_left, combined_train_acc, combined_val_acc = retrain_best_probe(
     combined_states, combined_labels, best_layer, best_head_idx,
-    model, animal_unembed, head_size, n_embd, n_animals
+    model, color_unembed, head_size, n_embd, n_colors
 )
 print(f"Combined   - Train: {combined_train_acc:.3f}, Val: {combined_val_acc:.3f}")
 
@@ -405,19 +408,19 @@ def get_sample_for_visualization(dataset, is_combined=False, seed=301, n_samples
     if is_combined:
         temp_dataset = CombinedDataset(
             tokenizer=tokenizer,
-            dataset_configs={"animal": animal_config, "color": color_config},
+            dataset_configs={"color": color_config, "city": city_config},
             size=n_samples,
-            sentences_per_config={"animal": N_ANIMALS_COMBINED, "color": N_COLORS_COMBINED},
-            fixed_entity_source="animal",
+            sentences_per_config={"color": N_COLORS_COMBINED, "city": N_CITIES_COMBINED},
+            fixed_entity_source="color",
             shuffle_sentences=True,
             seed=seed,
         )
     else:
-        temp_dataset = FavoriteAnimalDataset(
+        temp_dataset = FavoriteColorDataset(
             tokenizer=tokenizer,
             size=n_samples,
             n_entities=N_ENTITIES,
-            n_animals=N_ANIMALS,
+            n_colors=N_COLORS,
             fixed_entity_name=FIXED_ENTITY,
             seed=seed,
         )
@@ -442,12 +445,12 @@ def compute_accuracy_trajectory(sample, extractor, best_layer, best_head_idx, W_
     
     if is_combined:
         info_idx = sample.fixed_entity_sentence_end_token_idx
-        true_animal = sample.fixed_entity_value
+        true_color = sample.fixed_entity_value
     else:
         info_idx = sample.fixed_entity_sentence_end_token_idx
-        true_animal = sample.fixed_entity_animal
+        true_color = sample.fixed_entity_color
     
-    true_animal_idx = ANIMAL_TO_IDX[true_animal]
+    true_color_idx = COLOR_TO_IDX[true_color]
     
     incremental_states = extractor.extract_incremental_states_single_pass(
         input_ids, layers=[best_layer], use_tqdm=False
@@ -469,16 +472,16 @@ def compute_accuracy_trajectory(sample, extractor, best_layer, best_head_idx, W_
             logits = torch.einsum('bck,k->bc', A, w_right)
             
             pred_top1 = logits.argmax(dim=1).item()
-            is_correct_top1 = (pred_top1 == true_animal_idx)
+            is_correct_top1 = (pred_top1 == true_color_idx)
             
-            top3_preds = logits.topk(min(3, n_animals), dim=1).indices[0].tolist()
-            is_correct_top3 = (true_animal_idx in top3_preds)
+            top3_preds = logits.topk(min(3, n_colors), dim=1).indices[0].tolist()
+            is_correct_top3 = (true_color_idx in top3_preds)
             
             accuracies_top1.append(float(is_correct_top1))
             accuracies_top3.append(float(is_correct_top3))
             positions.append(pos)
     
-    return positions, accuracies_top1, accuracies_top3, info_idx, true_animal
+    return positions, accuracies_top1, accuracies_top3, info_idx, true_color
 
 # %%
 print("\n=== Visualization: Comparing Standalone vs Combined ===")
@@ -491,7 +494,7 @@ fig, axes = plt.subplots(3, 2, figsize=(16, 12))
 for sample_idx in range(3):
     # Standalone
     sample = standalone_viz_samples[sample_idx]
-    positions, acc_top1, acc_top3, info_idx, true_animal = compute_accuracy_trajectory(
+    positions, acc_top1, acc_top3, info_idx, true_color = compute_accuracy_trajectory(
         sample, extractor, best_layer, best_head_idx, standalone_W_left, standalone_w_right, is_combined=False
     )
     
@@ -499,17 +502,17 @@ for sample_idx in range(3):
     ax.plot(positions, acc_top1, 'b-', linewidth=2, alpha=0.7, label='Top-1')
     ax.plot(positions, acc_top3, 'g-', linewidth=2, alpha=0.7, label='Top-3')
     ax.axvline(x=info_idx, color='r', linestyle='--', linewidth=2, label=f'Info given')
-    ax.axhline(y=1/n_animals, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+    ax.axhline(y=1/n_colors, color='gray', linestyle=':', linewidth=1, alpha=0.5)
     ax.set_xlabel('Token Position')
     ax.set_ylabel('Correct')
-    ax.set_title(f'Standalone #{sample_idx+1}: {true_animal}')
+    ax.set_title(f'Standalone #{sample_idx+1}: {true_color}')
     ax.set_ylim(-0.1, 1.1)
     ax.legend(loc='upper left', fontsize=8)
     ax.grid(True, alpha=0.3)
     
     # Combined
     sample = combined_viz_samples[sample_idx]
-    positions, acc_top1, acc_top3, info_idx, true_animal = compute_accuracy_trajectory(
+    positions, acc_top1, acc_top3, info_idx, true_color = compute_accuracy_trajectory(
         sample, extractor, best_layer, best_head_idx, combined_W_left, combined_w_right, is_combined=True
     )
     
@@ -517,10 +520,10 @@ for sample_idx in range(3):
     ax.plot(positions, acc_top1, 'b-', linewidth=2, alpha=0.7, label='Top-1')
     ax.plot(positions, acc_top3, 'g-', linewidth=2, alpha=0.7, label='Top-3')
     ax.axvline(x=info_idx, color='r', linestyle='--', linewidth=2, label=f'Info given')
-    ax.axhline(y=1/n_animals, color='gray', linestyle=':', linewidth=1, alpha=0.5)
+    ax.axhline(y=1/n_colors, color='gray', linestyle=':', linewidth=1, alpha=0.5)
     ax.set_xlabel('Token Position')
     ax.set_ylabel('Correct')
-    ax.set_title(f'Combined {ANIMAL_RATIO} #{sample_idx+1}: {true_animal}')
+    ax.set_title(f'Combined {COLOR_RATIO} #{sample_idx+1}: {true_color}')
     ax.set_ylim(-0.1, 1.1)
     ax.legend(loc='upper left', fontsize=8)
     ax.grid(True, alpha=0.3)
@@ -545,23 +548,23 @@ def generate_eval_samples(is_combined, target_count, n_entities, seed_start=43):
     pbar = tqdm(total=target_count, desc=f"Generating {'combined' if is_combined else 'standalone'} samples")
     while len(eval_samples) < target_count:
         if is_combined:
-            n_animals_eval = n_entities // 5
-            n_colors_eval = n_entities - n_animals_eval
+            n_colors_eval = n_entities // 5
+            n_cities_eval = n_entities - n_colors_eval
             temp_dataset = CombinedDataset(
                 tokenizer=tokenizer,
-                dataset_configs={"animal": animal_config, "color": color_config},
+                dataset_configs={"color": color_config, "city": city_config},
                 size=100,
-                sentences_per_config={"animal": n_animals_eval, "color": n_colors_eval},
-                fixed_entity_source="animal",
+                sentences_per_config={"color": n_colors_eval, "city": n_cities_eval},
+                fixed_entity_source="color",
                 shuffle_sentences=True,
                 seed=seed_offset,
             )
         else:
-            temp_dataset = FavoriteAnimalDataset(
+            temp_dataset = FavoriteColorDataset(
                 tokenizer=tokenizer,
                 size=100,
                 n_entities=n_entities,
-                n_animals=N_ANIMALS,
+                n_colors=N_COLORS,
                 fixed_entity_name=FIXED_ENTITY,
                 seed=seed_offset,
             )
@@ -600,12 +603,12 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
         
         if is_combined:
             info_idx = sample.fixed_entity_sentence_end_token_idx
-            true_animal = sample.fixed_entity_value
+            true_color = sample.fixed_entity_value
         else:
             info_idx = sample.fixed_entity_sentence_end_token_idx
-            true_animal = sample.fixed_entity_animal
+            true_color = sample.fixed_entity_color
         
-        true_animal_idx = ANIMAL_TO_IDX[true_animal]
+        true_color_idx = COLOR_TO_IDX[true_color]
         sample_max_relative_pos = 0
         
         with torch.no_grad():
@@ -620,10 +623,10 @@ def evaluate_samples(eval_samples, extractor, best_layer, best_head_idx, W_left_
                 logits = torch.einsum('bck,k->bc', A, w_right)
                 
                 pred_top1 = logits.argmax(dim=1).item()
-                is_correct_top1 = (pred_top1 == true_animal_idx)
+                is_correct_top1 = (pred_top1 == true_color_idx)
                 
-                top3_preds = logits.topk(min(3, n_animals), dim=1).indices[0].tolist()
-                is_correct_top3 = (true_animal_idx in top3_preds)
+                top3_preds = logits.topk(min(3, n_colors), dim=1).indices[0].tolist()
+                is_correct_top3 = (true_color_idx in top3_preds)
                 
                 relative_pos = pos - info_idx
                 sample_max_relative_pos = max(sample_max_relative_pos, relative_pos)
@@ -704,7 +707,7 @@ ax.plot(standalone_on_standalone_pos_top1, standalone_on_standalone_mean_top1, '
 ax.plot(standalone_on_combined_pos_top1, standalone_on_combined_mean_top1, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
 ax.plot(combined_on_standalone_pos_top1, combined_on_standalone_mean_top1, 'orange', linewidth=2, label='Mixed probe → Homog. data')
 ax.plot(combined_on_combined_pos_top1, combined_on_combined_mean_top1, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
-ax.axhline(y=1/n_animals, color='r', linestyle=':', label=f'Random ({1/n_animals:.3f})')
+ax.axhline(y=1/n_colors, color='r', linestyle=':', label=f'Random ({1/n_colors:.3f})')
 ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
 ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
@@ -719,7 +722,7 @@ ax.plot(standalone_on_standalone_pos_top3, standalone_on_standalone_mean_top3, '
 ax.plot(standalone_on_combined_pos_top3, standalone_on_combined_mean_top3, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
 ax.plot(combined_on_standalone_pos_top3, combined_on_standalone_mean_top3, 'orange', linewidth=2, label='Mixed probe → Homog. data')
 ax.plot(combined_on_combined_pos_top3, combined_on_combined_mean_top3, 'orange', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
-ax.axhline(y=3/n_animals, color='r', linestyle=':', label=f'Random ({3/n_animals:.3f})')
+ax.axhline(y=3/n_colors, color='r', linestyle=':', label=f'Random ({3/n_colors:.3f})')
 ax.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
 ax.axvline(x=combined_min_len, color='orange', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 ax.set_xlabel('Tokens after Information Given')
@@ -728,7 +731,7 @@ ax.set_title('Top-3 Accuracy')
 ax.legend(fontsize=7, loc='best')
 ax.grid(True, alpha=0.3)
 
-plt.suptitle(f'Cross-Evaluation: Probe vs Test Data (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} animals, Mixed={ANIMAL_RATIO} animals', fontsize=12)
+plt.suptitle(f'Cross-Evaluation: Probe vs Test Data (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} colors, Mixed={COLOR_RATIO} colors', fontsize=12)
 plt.tight_layout()
 safe_savefig(os.path.join(PROJECT_ROOT, 'data/compare_standalone_vs_combined_accuracy.png'), dpi=150)
 plt.show()
@@ -740,12 +743,12 @@ plt.plot(standalone_on_standalone_pos_top1, standalone_on_standalone_mean_top1, 
 plt.plot(standalone_on_combined_pos_top1, standalone_on_combined_mean_top1, 'b--', linewidth=2, alpha=0.7, label='Homog. probe → Mixed data')
 plt.plot(combined_on_standalone_pos_top1, combined_on_standalone_mean_top1, 'green', linewidth=2, label='Mixed probe → Homog. data')
 plt.plot(combined_on_combined_pos_top1, combined_on_combined_mean_top1, 'green', linestyle='--', linewidth=2, alpha=0.7, label='Mixed probe → Mixed data')
-plt.axhline(y=1/n_animals, color='r', linestyle=':', label=f'Random ({1/n_animals:.3f})')
+plt.axhline(y=1/n_colors, color='r', linestyle=':', label=f'Random ({1/n_colors:.3f})')
 plt.axvline(x=standalone_min_len, color='b', linestyle=':', alpha=0.5, label=f'Homog. data ends ({standalone_min_len})')
 plt.axvline(x=combined_min_len, color='green', linestyle=':', alpha=0.5, label=f'Mixed data ends ({combined_min_len})')
 plt.xlabel('Tokens after Information Given')
 plt.ylabel('Top-1 Accuracy')
-plt.title(f'Cross-Evaluation Top-1 Accuracy (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} animals, Mixed={ANIMAL_RATIO} animals')
+plt.title(f'Cross-Evaluation Top-1 Accuracy (Layer {best_layer}, Head {best_head_idx})\nHomog.={N_ENTITIES} colors, Mixed={COLOR_RATIO} colors')
 plt.legend(loc='best', fontsize=9)
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
@@ -761,8 +764,8 @@ print("SUMMARY STATISTICS - CROSS EVALUATION")
 print("="*70)
 
 print(f"\nDataset Configuration:")
-print(f"  Homogeneous: {N_ENTITIES} sentences, all animals")
-print(f"  Mixed: {N_ENTITIES} sentences, {N_ANIMALS_COMBINED} animals ({ANIMAL_RATIO}) + {N_COLORS_COMBINED} colors")
+print(f"  Homogeneous: {N_ENTITIES} sentences, all colors")
+print(f"  Mixed: {N_ENTITIES} sentences, {N_COLORS_COMBINED} colors ({COLOR_RATIO}) + {N_CITIES_COMBINED} cities")
 print(f"  Fixed entity: {FIXED_ENTITY}")
 
 print(f"\nBest Probe: Layer {best_layer}, Head {best_head_idx}")
