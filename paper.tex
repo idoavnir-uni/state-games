@@ -1,0 +1,333 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final version.
+\usepackage[review]{acl}
+
+% Standard package includes
+\usepackage{times}
+\usepackage{latexsym}
+
+% For proper rendering and hyphenation of words containing Latin characters
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+
+% Additional packages
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{cleveref}
+
+% =============================================================================
+% Custom Commands
+% =============================================================================
+\newcommand{\tocite}{\textcolor{red}{[Add citation]}}
+\newcommand{\TODO}[1]{\textcolor{blue}{[TODO: #1]}}
+
+% =============================================================================
+% Title and Authors
+% =============================================================================
+\title{Finite State, Forced Forgetting: Investigating the Memory Mechanism in Sub-quadratic Models}
+
+\author{
+    Yuval Ran-Milo \\
+    Tel Aviv University \\
+    \texttt{yuval@example.com} \\\And
+    Shahar Mendel \\
+    Tel Aviv University \\
+    \texttt{shahar@example.com} \\\And
+    Ido Avnir \\
+    Tel Aviv University \\
+    \texttt{ido@example.com}
+}
+
+\begin{document}
+\maketitle
+
+% =============================================================================
+% Abstract
+% =============================================================================
+\begin{abstract}
+% TODO: Add abstract
+\end{abstract}
+
+% =============================================================================
+% Introduction
+% =============================================================================
+\section{Introduction}
+\label{sec:introduction}
+
+% TODO: Add introduction
+
+% =============================================================================
+% Related Work
+% =============================================================================
+\section{Related Work}
+\label{sec:related_work}
+
+% TODO: Add related work
+% 
+% EMPHASIS: Many prior works have focused on improving the *storage* capabilities 
+% of SSMs and sub-quadratic models. However, our work investigates whether the 
+% bottleneck lies not in storage, but in how models *query* their stored state.
+
+% =============================================================================
+% State Space Models
+% =============================================================================
+\section{State Space Models}
+\label{sec:ssm}
+
+Many state-of-the-art sub-quadratic architectures, including Mamba \tocite, RWKV \tocite, GLA \tocite, and Deltanet \tocite, can be unified under the framework of \emph{state space models} (SSMs); see \cref{sec:ssm_examples} for concrete examples. Despite their architectural differences, all of these models can be written in the following generic form.
+
+The model maintains an internal state $S_t \in \mathbb{R}^{d \times d}$ that is updated at each time step based on the previous state and the current input $x_t \in \mathbb{R}^{d}$:
+\begin{align}
+    S_t &= f(S_{t-1}) + g(x_t), \label{eq:state_update} \\
+    o_t &= S_t \, q(x_t), \label{eq:state_query}
+\end{align}
+where $f$ is a decay or transformation function applied to the previous state, $g(x_t)$ is some function of the current input (independent of other timesteps), and $o_t \in \mathbb{R}^{d}$ is the output. The output is produced by \emph{querying} the state via right-multiplication with a query vector $q(x_t) \in \mathbb{R}^{d}$ derived from the current input.
+
+Unlike transformers, whose attention mechanism incurs $O(L^2)$ computational cost with respect to sequence length $L$, SSM-based models enable inference in $O(L)$ time. This efficiency comes from compressing all past information into a fixed-size state $S_t \in \mathbb{R}^{d \times d}$, which is updated incrementally rather than recomputed from scratch.
+
+This raises a fundamental question: given the finite capacity of the state, \emph{how does the model store and retrieve in-context information?}
+
+\subsection{Examples}
+\label{sec:ssm_examples}
+
+To illustrate the generality of this framework, we show how two popular architectures fit the SSM formulation.
+
+\paragraph{Gated Linear Attention (GLA).}
+In GLA, the state update and query take the form:
+\begin{equation}
+    S_t = S_{t-1} \odot (1 \alpha_t^\top) + v_t k_t^\top, \; o_t = S_t \, q_t,
+    \label{eq:gla}
+\end{equation}
+where $\odot$ denotes element-wise multiplication, and $\alpha_t, v_t, k_t, q_t \in \mathbb{R}^{d}$ are learned projections of the input.
+
+\paragraph{Mamba-2.}
+In Mamba-2, the formulation is:
+\begin{equation}
+    S_t = \gamma_t S_{t-1} + v_t k_t^\top, \; o_t = S_t \, q_t,
+    \label{eq:mamba}
+\end{equation}
+where $\gamma_t \in \mathbb{R}$ is a learned scalar decay factor.
+
+Both architectures share the key property that the output is produced by querying the state from the right.
+
+% =============================================================================
+% Methodology
+% =============================================================================
+\section{Methodology}
+\label{sec:methodology}
+
+\subsection{Entity-Binding Datasets}
+\label{sec:datasets}
+
+We construct \emph{in-context} entity-binding datasets to study how SSMs store and retrieve factual associations. Each dataset follows a generic structure: samples consist of $N_e$ statements of the form ``\texttt{<entity> <relation> <property>}'', where each entity is associated with one of $C$ possible property values.
+
+These associations are provided entirely within the input prompt (not learned during pretraining) and vary randomly across samples. One designated \emph{target entity} appears in all samples, but its associated property changes. The order of entities is randomized, and the target entity appears at a random position. This ensures that any successful retrieval must rely on in-context memory rather than memorized facts. See \cref{fig:dataset_examples} for examples.
+
+\begin{figure}[t]
+\centering
+\small
+\fbox{\parbox{0.9\columnwidth}{
+\textbf{Favorite Color} ($N_e=30$, $C=10$)\\[2pt]
+\textit{Relation:} ``X's favorite color is Y.''\\[4pt]
+\texttt{Lady Gaga's favorite color is red.}\\
+\texttt{Beyonc\'{e}'s favorite color is green.}\\
+\texttt{...}
+}}
+
+\vspace{0.5em}
+
+\fbox{\parbox{0.9\columnwidth}{
+\textbf{Lives in City} ($N_e=30$, $C=10$)\\[2pt]
+\textit{Relation:} ``X lives in Y.''\\[4pt]
+\texttt{The shark lives in France.}\\
+\texttt{The dog lives in Italy.}\\
+\texttt{...}
+}}
+\caption{Examples from our entity-binding datasets. Each sample contains $N_e$ entity-property pairs with one target entity whose property varies across samples.}
+\label{fig:dataset_examples}
+\end{figure}
+
+\subsection{Probing State Representations}
+\label{sec:probing}
+
+Recall from \cref{eq:state_query} that SSMs produce outputs by querying the state via right-multiplication: $o_t = S_t \, q(x_t)$. This suggests a natural way to probe whether entity-property bindings are stored in the state: we can train a probe that mimics this query mechanism.
+
+For each internal state $S_t \in \mathbb{R}^{d \times d}$ (indexed by layer $\ell$ and head $h$), we extract the state at the \emph{final token position} of the input sequence. We then train a probe with two learned components: (i) a \textbf{query component} $q_{\text{probe}} \in \mathbb{R}^{d}$ that queries the state from the right, producing $S_t \, q_{\text{probe}} \in \mathbb{R}^{d}$; and (ii) a \textbf{classifier component} $W_{\text{cls}} \in \mathbb{R}^{C \times d}$ that maps the queried vector to $C$ class logits.
+
+The full probe is:
+\begin{equation}
+    \text{probe}(S_t) = W_{\text{cls}} \, S_t \, q_{\text{probe}} \in \mathbb{R}^{C}.
+    \label{eq:probe}
+\end{equation}
+
+We call this the \textit{natural probe} because it mirrors the model's native state-querying mechanism: the state is multiplied by a vector \emph{from the right}, just as in \cref{eq:state_query}.
+
+To validate that this structure is important, we also train a \textit{non-natural probe} that queries from the opposite direction:
+\begin{equation}
+    \text{probe}_{\textit{non-nat}}(S_t) = (q_{\text{probe}}^\top S_t) W_{\text{cls}} \in \mathbb{R}^{C},
+    \label{eq:probe_wrong}
+\end{equation}
+where $q_{\text{probe}} \in \mathbb{R}^{d}$ is applied from the left, and $W_{\text{cls}} \in \mathbb{R}^{d \times C}$ projects to class logits. If memory is encoded consistently with the model's query mechanism, the \textit{natural probe} should significantly outperform the \textit{non-natural probe}; we verify this in \cref{sec:probing_ablation}.
+
+\subsection{Evaluating Model Retrieval}
+\label{sec:model_retrieval}
+
+To compare probe accuracy with the model's own retrieval ability, we construct a question-answering prompt that queries the model for the target entity's property. \cref{fig:prompt_template} shows an example for the Favorite Color dataset.
+
+\begin{figure}[t]
+\centering
+\small
+\fbox{\parbox{0.9\columnwidth}{
+\texttt{Given the following context, let's}\\
+\texttt{answer the question below.}\\[4pt]
+\texttt{Context:}\\
+\texttt{Lady Gaga's favorite color is red.}\\
+\texttt{Beyonc\'{e}'s favorite color is green. ...}\\[4pt]
+\texttt{Question: What is Lady Gaga's}\\
+\texttt{favorite color?}\\[4pt]
+\texttt{Answer: Lady Gaga's favorite color is}
+}}
+\caption{Prompt template for evaluating model retrieval. The model must generate the correct property (e.g., ``red'') as the next token.}
+\label{fig:prompt_template}
+\end{figure}
+
+We measure top-1 accuracy: the model must generate the correct property label as its next token, where we only consider tokens corresponding to valid property values from the dataset (e.g., the $C=10$ colors).
+
+\subsection{Causal Intervention}
+\label{sec:causal}
+
+To establish that the heads identified by probing have a \emph{causal} effect on model behavior, we perform counterfactual patching experiments using the prompt structure from \cref{sec:model_retrieval}.
+
+The procedure is as follows: (i) generate two prompts $A$ and $B$ that differ only in the target entity's property (e.g., ``Lady Gaga's favorite color is red'' vs. ``Lady Gaga's favorite color is blue''); (ii) run both prompts through the model, collecting states after processing the context; (iii) for prompt $A$, replace the states of a \emph{subset} of heads with the corresponding states from prompt $B$; and (iv) continue generation and measure whether the output switches from property $A$ to property $B$.
+
+We compare several head selection strategies: (i) \textbf{Baseline}: no heads patched, measuring the model's normal accuracy; (ii) \textbf{\textit{Natural probe} heads}: the top-ranked heads by \textit{natural probe} accuracy; (iii) \textbf{\textit{Non-natural probe} heads}: the top-ranked heads by \textit{non-natural probe} accuracy; and (iv) \textbf{All heads}: replacing all head states, representing the maximum possible effect.
+
+% =============================================================================
+% Results
+% =============================================================================
+\section{Results}
+\label{sec:results}
+
+We conduct all experiments using RWKV-7 1.5B, an SSM-based language model with 24 layers and 32 heads per layer (768 total heads), achieving state-of-the-art performance at its scale \tocite.
+
+\subsection{Validating the Probing Approach}
+\label{sec:probing_ablation}
+
+Before interpreting probe results, we first verify that the probe architecture is meaningful: it should only succeed when the target information is actually encoded in the state, rather than being powerful enough to extract arbitrary patterns.
+
+\subsubsection{The Probe is Not Overly Powerful}
+\label{sec:probe_not_strong}
+
+If the probe were too expressive, it could achieve high accuracy on any head regardless of whether that head stores relevant information. However, \cref{tab:top_heads} shows that the \textit{natural probe} achieves high accuracy on only a small fraction of heads. The top head (L15H11) reaches 96.3\%, but accuracy drops sharply: by rank 5 it falls below 80\%, and by rank 10 below 60\%. Most of the 768 heads yield near-chance performance.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Top 10 heads ranked by \textit{natural probe} validation accuracy on the Favorite Color dataset.}
+\label{tab:top_heads}
+\begin{tabular}{@{}clcc@{}}
+\toprule
+Rank & Head & Val Acc. & Train Acc. \\
+\midrule
+1 & L15H11 & 96.3\% & 97.5\% \\
+2 & L15H2 & 93.0\% & 95.4\% \\
+3 & L15H13 & 91.4\% & 93.7\% \\
+4 & L14H23 & 88.5\% & 91.4\% \\
+5 & L15H27 & 79.0\% & 81.1\% \\
+6 & L9H18 & 72.8\% & 76.6\% \\
+7 & L15H1 & 65.3\% & 67.9\% \\
+8 & L14H18 & 61.8\% & 65.9\% \\
+9 & L15H8 & 61.1\% & 62.8\% \\
+10 & L12H18 & 58.6\% & 63.3\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This concentration of high-accuracy probes in a small subset of heads, rather than diffuse success across all 768 heads, indicates that the probe is identifying genuine ``memory heads'' rather than exploiting spurious correlations.
+
+\subsubsection{Querying from the Right Outperforms Querying from the Left}
+\label{sec:natural_vs_nonnatural}
+
+The \textit{natural probe} (querying from the right) significantly outperforms the \textit{non-natural probe} (querying from the left): the best \textit{natural probe} reaches 96.3\%, while the best \textit{non-natural probe} achieves only 70.8\%.
+
+This gap confirms that memory is encoded in a manner consistent with the model's native query mechanism (\cref{eq:state_query}). Probing from the right extracts information effectively; probing from the left does not. \TODO{add figure from poster}
+
+\subsection{Causal Effect of Memory Heads}
+\label{sec:causal_results}
+
+To verify that probe-identified heads play a causal role in storing memory, we perform counterfactual patching experiments on 50 sample pairs from the Favorite Color dataset. \cref{tab:causal} shows the results.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output.}
+\label{tab:causal}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Method & Correct & Switched & Neither \\
+\midrule
+Baseline & 90\% & 0\% & 10\% \\
+\textit{Natural} (top 0.5\%) & 14\% & 36\% & 50\% \\
+\textit{Non-natural} (top 0.5\%) & 44\% & 4\% & 52\% \\
+All heads & 0\% & 76\% & 24\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Without patching (Baseline), the model outputs the correct property 90\% of the time. When we patch the top 0.5\% of heads selected by \textit{natural probe} accuracy, the model switches to the counterfactual property 36\% of the time. In contrast, patching the same number of heads selected by \textit{non-natural probe} accuracy yields only a 4\% switch rate. Patching all heads provides an upper bound, achieving 76\% switch rate. \TODO{add experiment with random head selection as additional baseline}
+
+\subsection{The Bottleneck is Querying, Not Storage}
+\label{sec:bottleneck}
+
+A key observation emerges from comparing probe performance to model performance. While our probes extract the correct binding with up to 96.3\% accuracy, the model's own ability to answer questions about these bindings is substantially lower.
+
+When we prompt the model using the template in \cref{fig:prompt_template}, its accuracy is far below probe accuracy. This gap implies that the information \emph{is stored} in the state (the probe finds it) but the model struggles to \emph{query} it effectively during generation.
+
+This finding challenges the common assumption that SSMs' limitations stem from insufficient memory capacity. Instead, our results suggest that the bottleneck lies in the model's ability to formulate effective queries.
+
+\subsection{Universal Memory Heads}
+\label{sec:universal_heads}
+
+We analyze whether the same heads are important across different semantic domains by comparing top-performing heads on the Favorite Color dataset versus Lives in City.
+
+We find substantial overlap: \textbf{7 of the top 10 heads are shared across both datasets}. This suggests the existence of \emph{universal memory heads} that specialize in entity-property binding regardless of semantic content. We defer investigation of the mechanism underlying these heads to future work.
+
+\subsection{Semantic Collision Accelerates Forgetting}
+\label{sec:semantic_collision}
+
+We investigate how context affects memory retention by measuring probe accuracy as a function of token distance from the information. We observe that \textbf{increased semantic similarity between the prompt content and the target subject accelerates the model's forgetting rate}. When subsequent sentences discuss similar entities, probe accuracy degrades faster than when the intervening content is semantically distinct.
+
+% =============================================================================
+% Future Work
+% =============================================================================
+\section{Future Work}
+\label{sec:future_work}
+
+Our findings open several directions for future research: (i) \textbf{Characterizing Universal Memory Heads}: what makes these heads special, and could understanding their mechanism inform architectural improvements? (ii) \textbf{Improving State Querying}: given that the bottleneck appears to be querying rather than storage, can we design better query mechanisms? (iii) \textbf{Scaling Analysis}: do these patterns hold in larger models?
+
+% =============================================================================
+% Conclusion
+% =============================================================================
+\section{Conclusion}
+\label{sec:conclusion}
+
+We investigated the in-context memory mechanism of state space models by probing their internal states. Our key findings are: (i) \textbf{Natural probing works}: probes that query the state from the right significantly outperform probes that query from the left; (ii) \textbf{Memory is localized}: only a small subset of heads store entity-property bindings with high fidelity; (iii) \textbf{Probing identifies causal heads}: counterfactual patching confirms that probe-identified heads have genuine causal influence; (iv) \textbf{The bottleneck is querying}: probe accuracy far exceeds model accuracy, suggesting information is stored but poorly retrieved; (v) \textbf{Universal memory heads exist}: the same heads are important across different semantic domains; and (vi) \textbf{Semantic collision hurts}: similar semantic content accelerates forgetting.
+
+These results suggest that improving sub-quadratic models may require focusing on the query mechanism rather than storage capacity.
+
+% =============================================================================
+% Appendix
+% =============================================================================
+\appendix
+
+\section{Probing Training Details}
+\label{app:probing}
+
+Training configuration for the probing experiments: train/validation split of 70\%/30\%, maximum of 20,000 epochs, early stopping patience of 20 epochs, batch size of 1,000, and learning rate of $10^{-3}$ with Adam optimizer.
+
+\end{document}

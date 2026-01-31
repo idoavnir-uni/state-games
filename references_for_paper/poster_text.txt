@@ -1,0 +1,102 @@
+\section{Finite State and In-Context Memory in Sub-Quadratic Models}
+
+\subsection{Overview}
+\textbf{TL;DR.} We explore the internal states of state-space models (SSMs) to understand how in-context information is stored and retrieved in sub-quadratic architectures.
+
+State-space models and many other sub-quadratic models maintain an internal \emph{state} that is updated sequentially and queried to produce outputs. This design enables inference in linear time with respect to sequence length.
+
+\subsection{State-Space Models}
+Formally, SSMs maintain a recurrent state:
+\begin{equation}
+S_t = f(S_{t-1}) + g(x_t),
+\end{equation}
+which is queried to produce an output:
+\begin{equation}
+o_t = S_t q(x_t).
+\end{equation}
+
+This paradigm is shared by several recent architectures, including \textit{Deltanet}, \textit{Mamba}, \textit{GLA}, and \textit{RWKV}.
+
+For example, in GLA:
+\begin{equation}
+S_t = S_{t-1} \odot (1 \alpha_t^\top) + v_t k_t^\top, \quad
+o_t = S_t q_t.
+\end{equation}
+
+In Mamba-2:
+\begin{equation}
+S_t = \gamma_t S_{t-1} + v_t k_t^\top, \quad
+o_t = S_t q_t.
+\end{equation}
+
+Unlike transformers, whose attention mechanism incurs an $O(L^2)$ computational cost, SSM-based models allow inference in $O(L)$ time.
+
+\subsection{Research Question}
+Can we leverage the internal states of SSMs to understand how in-context information is stored and retrieved?
+
+\subsection{Methodology}
+\paragraph{Datasets.}
+We construct entity-binding datasets across multiple semantic domains. Each prompt introduces an entity and associates it with a property, for example:
+\begin{quote}
+``Lady Gaga’s favorite color is red.'' \\
+``The shark lives in France.''
+\end{quote}
+
+\paragraph{Model.}
+We conduct all experiments using \textbf{RWKV-7}, a state-of-the-art SSM-based language model.
+
+\paragraph{Probing States.}
+For each internal state (indexed by layer and head), we train a query probe that maps an entity to its associated in-context information. The probe is defined as:
+\begin{equation}
+\text{probe}(S, W_{\text{classifier}}, W_{\text{query}})
+= W_{\text{classifier}} \, S \, W_{\text{query}}.
+\end{equation}
+
+\paragraph{Head Selection and Robustness.}
+We identify top-performing heads for each dataset and analyze shared patterns across domains. We additionally test multiple prompt variations to identify when probes fail to retrieve the correct information.
+
+\subsection{Results}
+
+\subsubsection{Natural Probing Extracts Memory}
+We compare two probing strategies:
+\begin{itemize}
+    \item \textbf{Natural probe}: multiplies the state by a query vector from the right, mirroring the model’s inference mechanism.
+    \item \textbf{Non-natural probe}: multiplies the state by a vector from the left.
+\end{itemize}
+
+Natural probes achieve significantly higher extraction accuracy across heads, indicating that memory is encoded in a manner consistent with the model’s native state-querying mechanism.
+
+\subsubsection{Memory Heads Have a Causal Effect}
+We perform patching experiments on heads identified by high probe performance, replacing their stored information and measuring downstream effects.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lccc}
+\hline
+\textbf{Head Selection Method} & \textbf{Correct} & \textbf{Switched} & \textbf{Neither} \\
+\hline
+Baseline (no heads changed) & 90\% & 0\% & 10\% \\
+Natural probe (top 0.5\%) & 14\% & 36\% & 50\% \\
+Non-natural probe (top 0.5\%) & 44\% & 4\% & 52\% \\
+All heads & 0\% & 76\% & 24\% \\
+\hline
+\end{tabular}
+\caption{Patching experiments show that heads identified by natural probes have a causal influence on in-context information.}
+\end{table}
+
+Patching only 0.5\% of the best-performing heads is sufficient to flip the model’s output significantly more often than baseline.
+
+\subsubsection{Universal Memory Heads}
+We analyze the top-performing heads across different datasets (e.g., colors and animals). We observe substantial overlap: 7 out of the top 10 heads are shared across both domains, suggesting the existence of universal memory heads.
+
+\subsubsection{Semantic Collision Accelerates Forgetting}
+When prompt content becomes semantically similar to the target entity, probe accuracy degrades earlier in the sequence. This indicates that semantic overlap accelerates the forgetting of in-context information.
+
+Notably, probe performance significantly exceeds the model’s own accuracy, suggesting that the primary bottleneck lies in the model’s state-querying mechanism rather than memory storage itself.
+
+\subsection{Future Work}
+Future research directions include:
+\begin{itemize}
+    \item Characterizing the functional role of universal memory heads.
+    \item Improving the model’s ability to query and utilize stored state information.
+\end{itemize}
