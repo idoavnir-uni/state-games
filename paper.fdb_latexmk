@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex paper"] 1770056161.1621 "paper.aux" "paper.bbl" "paper" 1770056162.22704 0
+["bibtex paper"] 1770057717.39165 "paper.aux" "paper.bbl" "paper" 1770057718.42998 0
   "./acl_natbib.bst" 1770028868.40404 47709 d9d0ab22329e3318a3d1b2ae6abaab62 ""
   "./custom.bib" 1770055620.06096 9007 38ff51d0e5645f10c256ea5515dba211 ""
-  "paper.aux" 1770056161.99446 16605 1e80f41ba02c8e4de8ded25ad34bf527 "pdflatex"
+  "paper.aux" 1770057718.19656 16503 d5494eeff16c09bf12a3417b758072db "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1770056161.25533 "/Users/shaharmendel/state-games/paper.tex" "paper.pdf" "paper" 1770056162.22717 0
+["pdflatex"] 1770057717.48972 "/Users/shaharmendel/state-games/paper.tex" "paper.pdf" "paper" 1770057718.43017 0
   "/Users/shaharmendel/state-games/paper.tex" 1770052834.66766 19069 d3e981a7a4d428460745a6cc67cecace ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
@@ -161,11 +161,11 @@
   "/usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1749117969 3345732 b78fbbfb4578ce6fc3fa05c916f1144d ""
   "/usr/local/texlive/2025/texmf.cnf" 1741450484 577 418a7058ec8e006d8704f60ecd22c938 ""
   "acl.sty" 1770028868.39694 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "paper.aux" 1770056161.99446 16605 1e80f41ba02c8e4de8ded25ad34bf527 "pdflatex"
-  "paper.bbl" 1770056161.25296 4060 1feec497fe3501644f59e933fb43ab07 "bibtex paper"
-  "paper.out" 1770056161.99579 3496 0235a0b4734b0515ebe1c92bc78a26f7 "pdflatex"
+  "paper.aux" 1770057718.19656 16503 d5494eeff16c09bf12a3417b758072db "pdflatex"
+  "paper.bbl" 1770057717.48719 4060 1feec497fe3501644f59e933fb43ab07 "bibtex paper"
+  "paper.out" 1770057718.19756 3496 0235a0b4734b0515ebe1c92bc78a26f7 "pdflatex"
   "paper.tex" 1770052834.66766 19069 d3e981a7a4d428460745a6cc67cecace ""
-  "related-work.tex" 1770056160.01906 6813 0318c2ab0c86271652467ec64cf4ea30 ""
+  "related-work.tex" 1770057716.129 6517 36e0fb4d648de09875812e70501c9743 ""
   (generated)
   "paper.aux"
   "paper.log"
