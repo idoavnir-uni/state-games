@@ -1,0 +1,99 @@
+\section{Related Work}
+\label{sec:related_work}
+
+\paragraph{Memory in Transformers.}
+Transformers implement in-context memory primarily through self-attention, where
+each token can retrieve information from earlier positions by computing
+content-dependent weights over key--value pairs \cite{vaswani2017attention}.
+This mechanism is often viewed as a form of differentiable, content-addressable
+memory: rather than compressing the past into a single recurrent state, the
+model maintains access to a growing set of past representations, enabling
+flexible retrieval and composition over the entire context window. A large body
+of work has therefore focused on extending the effective context length or
+augmenting the model with additional memory beyond the fixed window. Notable
+approaches include recurrence across segments (Transformer-XL), which reuses
+previous hidden states to model dependencies beyond a fixed-length context
+\cite{dai2019transformerxl}, compressing older memories to preserve long-range
+information under a bounded compute budget \cite{rae2019compressive}, and
+retrieval-augmented language modeling, which explicitly consults an external
+datastore during generation \cite{borgeaud2022retro}. These methods primarily
+target \emph{memory availability} (how much information can be brought into the
+computation) and \emph{access} (how that information can be retrieved when
+needed).
+
+%\paragraph{Sub-quadratic attention and memory.}
+%Since standard attention scales quadratically with sequence length, efficient
+%Transformer variants aim to preserve attention-like retrieval while reducing
+%time and/or memory. Dense approximations typically exploit structure in the
+%attention matrix, such as low-rank projections (Linformer)
+%\cite{wang2020linformer} or kernel-based approximations with random features
+%(Performer) \cite{choromanski2021performer}. Other approaches use approximate
+%nearest-neighbor search or hashing to restrict attention computation (Reformer)
+%\cite{kitaev2020reformer}. These models are frequently evaluated on long-context
+%benchmarks designed to stress memory and long-range dependency modeling, such as
+%Long Range Arena (LRA) \cite{tay2020lra}. A recurring theme across this
+%literature is that the \emph{form} of the attention approximation matters:
+%changing the mechanism used for retrieval (e.g., low-rank vs.\ kernel vs.\
+%sparsity) can alter which long-range dependencies remain accessible, thereby
+%affecting apparent memory performance even when the nominal context length is
+%unchanged.
+
+\paragraph{Attention-free sub-quadratic sequence models.}
+A complementary line of work achieves sub-quadratic (often linear-time)
+inference by replacing attention with recurrent or convolutional updates that
+compress the past into a fixed-size state. State space models (SSMs) provide a
+particularly unified view: they maintain an internal state updated online and
+produce outputs via a readout from that state. Foundational work on HiPPO
+introduced principled mechanisms for online compression of history via
+projections \cite{gu2020hippo}. Building on these ideas, structured
+parameterizations such as S4 made SSMs computationally practical and competitive
+on long-range tasks \cite{gu2021s4}, and subsequent simplifications like DSS
+showed that diagonal state parameterizations can retain much of S4's
+effectiveness \cite{gupta2022dss}. Modern language-model-scale architectures
+(e.g., selective SSMs and gated linear attention variants) can often be
+interpreted as instances of this broader paradigm: the model stores information
+in a recurrent state and must \emph{query} or \emph{read} from it during
+generation. This raises a distinct memory question from the Transformer setting:
+when the past is compressed into a fixed-size state, the limiting factor may be
+less about what can be stored in principle and more about which stored
+information is practically retrievable given the model's readout mechanism.
+
+\paragraph{Entity binding as an in-context memory primitive.}
+Entity--attribute binding tasks probe a core capability underlying factual
+recall and multi-entity reasoning: given a context describing several entities
+and their properties, the model must correctly bind each property to its
+corresponding entity at query time. Recent work has used controlled settings to
+study how binding is represented internally; for example, Feng and Steinhardt
+identify a ``binding ID'' mechanism and use causal interventions to argue that
+models attach binding-related vectors to entity and attribute positions
+\cite{feng2024binding}. Such findings motivate synthetic entity-binding
+evaluations as a targeted lens on in-context memory that avoids confounds from
+pretraining knowledge. Our entity-binding datasets are in this spirit, but we
+focus on sub-quadratic models whose memory is mediated by a recurrent state:
+this shifts the emphasis from \emph{Can tokens attend to the right binding} to
+\emph{which bindings are present in the compressed state and how the model
+queries them}. In particular, by comparing what can be decoded from the state to
+what the model actually retrieves during generation, we align entity binding
+with a concrete hypothesis about the failure mode in sub-quadratic
+architectures: a potential mismatch between \emph{stored} information and the
+model's \emph{query} mechanism.
+
+\paragraph{Interpretability tools for studying memory mechanisms.}
+Our work sits within mechanistic interpretability, which aims to localize and
+characterize internal computations responsible for model behavior. Probing
+methods train auxiliary predictors to decode information from hidden
+activations; recent 'lens' techniques decode intermediate representations into
+output distributions, providing a token-level view of how predictions evolve
+across depth \cite{belrose2023tunedlens}. Beyond correlational probes, causal
+interventions are commonly used to establish necessity and sufficiency of
+components. Meng et al.\ develop causal tracing interventions to localize
+computations supporting factual recall and show that specific mechanisms can be
+edited (ROME) \cite{meng2022rome}. Activation patching has become a standard causal tool for circuit-level analysis, and
+recent work systematizes methodological choices and metrics for patching-based
+localization \cite{zhang2023patching}. Broader frameworks for circuit-based
+reasoning about Transformers provide a language for decomposing computations
+into interpretable parts \cite{elhage2021framework}. We adopt these
+interpretability principles in the sub-quadratic setting by (i) designing probes
+that mirror the architecture's native readout direction and (ii) using
+counterfactual patching on internal state representations to test whether
+probe-identified components have a causal effect on retrieval.

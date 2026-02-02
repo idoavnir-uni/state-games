@@ -64,14 +64,7 @@
 % =============================================================================
 % Related Work
 % =============================================================================
-\section{Related Work}
-\label{sec:related_work}
-
-% TODO: Add related work
-% 
-% EMPHASIS: Many prior works have focused on improving the *storage* capabilities 
-% of SSMs and sub-quadratic models. However, our work investigates whether the 
-% bottleneck lies not in storage, but in how models *query* their stored state.
+\input{related-work}
 
 % =============================================================================
 % State Space Models
@@ -329,5 +322,10 @@ These results suggest that improving sub-quadratic models may require focusing o
 \label{app:probing}
 
 Training configuration for the probing experiments: train/validation split of 70\%/30\%, maximum of 20,000 epochs, early stopping patience of 20 epochs, batch size of 1,000, and learning rate of $10^{-3}$ with Adam optimizer.
+
+% =============================================================================
+% Bibliography
+% =============================================================================
+\bibliography{custom}
 
 \end{document}

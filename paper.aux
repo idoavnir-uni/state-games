@@ -3,6 +3,14 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{vaswani2017attention}
+\citation{dai2019transformerxl}
+\citation{rae2019compressive}
+\citation{borgeaud2022retro}
+\citation{gu2020hippo}
+\citation{gu2021s4}
+\citation{gupta2022dss}
+\citation{feng2024binding}
 \@LN@col{1}
 \@LN{0}{0}
 \@LN{1}{0}
@@ -14,10 +22,8 @@
 \@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{1}{section.2}\protected@file@percent }
 \newlabel{sec:related_work}{{2}{1}{Related Work}{section.2}{}}
 \newlabel{sec:related_work@cref}{{[section][2][]2}{[1][1][]1}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Memory in Transformers.}{1}{section*.1}\protected@file@percent }
 \@LN{4}{0}
-\@writefile{toc}{\contentsline {section}{\numberline {3}State Space Models}{1}{section.3}\protected@file@percent }
-\newlabel{sec:ssm}{{3}{1}{State Space Models}{section.3}{}}
-\newlabel{sec:ssm@cref}{{[section][3][]3}{[1][1][]1}{}{}{}}
 \@LN{5}{0}
 \@LN{6}{0}
 \@LN{7}{0}
@@ -29,11 +35,7 @@
 \@LN{13}{0}
 \@LN{14}{0}
 \@LN{15}{0}
-\newlabel{eq:state_update}{{1}{1}{State Space Models}{equation.1}{}}
-\newlabel{eq:state_update@cref}{{[equation][1][]1}{[1][1][]1}{}{}{}}
 \@LN{16}{0}
-\newlabel{eq:state_query}{{2}{1}{State Space Models}{equation.2}{}}
-\newlabel{eq:state_query@cref}{{[equation][2][]2}{[1][1][]1}{}{}{}}
 \@LN{17}{0}
 \@LN{18}{0}
 \@LN{19}{0}
@@ -49,43 +51,29 @@
 \@LN{29}{0}
 \@LN{30}{0}
 \@LN{31}{0}
+\@writefile{toc}{\contentsline {paragraph}{Attention-free sub-quadratic sequence models.}{1}{section*.2}\protected@file@percent }
 \@LN{32}{0}
 \@LN{33}{0}
 \@LN{34}{0}
-\@LN@col{2}
 \@LN{35}{0}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Examples}{1}{subsection.3.1}\protected@file@percent }
-\newlabel{sec:ssm_examples}{{3.1}{1}{Examples}{subsection.3.1}{}}
-\newlabel{sec:ssm_examples@cref}{{[subsection][1][3]3.1}{[1][1][]1}{}{}{}}
 \@LN{36}{0}
 \@LN{37}{0}
+\@LN@col{2}
 \@LN{38}{0}
-\@writefile{toc}{\contentsline {paragraph}{Gated Linear Attention (GLA).}{1}{section*.1}\protected@file@percent }
 \@LN{39}{0}
 \@LN{40}{0}
-\newlabel{eq:gla}{{3}{1}{Gated Linear Attention (GLA)}{equation.3}{}}
-\newlabel{eq:gla@cref}{{[equation][3][]3}{[1][1][]1}{}{}{}}
 \@LN{41}{0}
 \@LN{42}{0}
 \@LN{43}{0}
 \@LN{44}{0}
-\@writefile{toc}{\contentsline {paragraph}{Mamba-2.}{1}{section*.2}\protected@file@percent }
 \@LN{45}{0}
-\newlabel{eq:mamba}{{4}{1}{Mamba-2}{equation.4}{}}
-\newlabel{eq:mamba@cref}{{[equation][4][]4}{[1][1][]1}{}{}{}}
 \@LN{46}{0}
 \@LN{47}{0}
 \@LN{48}{0}
 \@LN{49}{0}
 \@LN{50}{0}
 \@LN{51}{0}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Methodology}{1}{section.4}\protected@file@percent }
-\newlabel{sec:methodology}{{4}{1}{Methodology}{section.4}{}}
-\newlabel{sec:methodology@cref}{{[section][4][]4}{[1][1][]1}{}{}{}}
 \@LN{52}{0}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Entity-Binding Datasets}{1}{subsection.4.1}\protected@file@percent }
-\newlabel{sec:datasets}{{4.1}{1}{Entity-Binding Datasets}{subsection.4.1}{}}
-\newlabel{sec:datasets@cref}{{[subsection][1][4]4.1}{[1][1][]1}{}{}{}}
 \@LN{53}{0}
 \@LN{54}{0}
 \@LN{55}{0}
@@ -94,6 +82,7 @@
 \@LN{58}{0}
 \@LN{59}{0}
 \@LN{60}{0}
+\@writefile{toc}{\contentsline {paragraph}{Entity binding as an in-context memory primitive.}{1}{section*.3}\protected@file@percent }
 \@LN{61}{0}
 \@LN{62}{0}
 \@LN{63}{0}
@@ -102,23 +91,20 @@
 \@LN{66}{0}
 \@LN{67}{0}
 \@LN{68}{0}
+\@LN{69}{0}
+\@LN{70}{0}
+\@LN{71}{0}
+\@LN{72}{0}
+\@LN{73}{0}
+\@LN{74}{0}
+\@LN{75}{0}
+\@LN{76}{0}
+\@LN{77}{0}
+\citation{belrose2023tunedlens}
+\citation{meng2022rome}
+\citation{zhang2023patching}
+\citation{elhage2021framework}
 \@LN@col{1}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Examples from our entity-binding datasets. Each sample contains $N_e$ entity-property pairs with one target entity whose property varies across samples.}}{2}{figure.caption.3}\protected@file@percent }
-\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:dataset_examples}{{1}{2}{Examples from our entity-binding datasets. Each sample contains $N_e$ entity-property pairs with one target entity whose property varies across samples}{figure.caption.3}{}}
-\newlabel{fig:dataset_examples@cref}{{[figure][1][]1}{[1][1][]2}{}{}{}}
-\@LN{69}{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Probing State Representations}{2}{subsection.4.2}\protected@file@percent }
-\newlabel{sec:probing}{{4.2}{2}{Probing State Representations}{subsection.4.2}{}}
-\newlabel{sec:probing@cref}{{[subsection][2][4]4.2}{[1][1][]2}{}{}{}}
-\@LN{70}{1}
-\@LN{71}{1}
-\@LN{72}{1}
-\@LN{73}{1}
-\@LN{74}{1}
-\@LN{75}{1}
-\@LN{76}{1}
-\@LN{77}{1}
 \@LN{78}{1}
 \@LN{79}{1}
 \@LN{80}{1}
@@ -126,18 +112,15 @@
 \@LN{82}{1}
 \@LN{83}{1}
 \@LN{84}{1}
-\newlabel{eq:probe}{{5}{2}{Probing State Representations}{equation.5}{}}
-\newlabel{eq:probe@cref}{{[equation][5][]5}{[1][2][]2}{}{}{}}
 \@LN{85}{1}
 \@LN{86}{1}
 \@LN{87}{1}
+\@writefile{toc}{\contentsline {paragraph}{Interpretability tools for studying memory mechanisms.}{2}{section*.4}\protected@file@percent }
 \@LN{88}{1}
 \@LN{89}{1}
 \@LN{90}{1}
 \@LN{91}{1}
 \@LN{92}{1}
-\newlabel{eq:probe_wrong}{{6}{2}{Probing State Representations}{equation.6}{}}
-\newlabel{eq:probe_wrong@cref}{{[equation][6][]6}{[1][2][]2}{}{}{}}
 \@LN{93}{1}
 \@LN{94}{1}
 \@LN{95}{1}
@@ -145,25 +128,15 @@
 \@LN{97}{1}
 \@LN{98}{1}
 \@LN{99}{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Evaluating Model Retrieval}{2}{subsection.4.3}\protected@file@percent }
-\newlabel{sec:model_retrieval}{{4.3}{2}{Evaluating Model Retrieval}{subsection.4.3}{}}
-\newlabel{sec:model_retrieval@cref}{{[subsection][3][4]4.3}{[1][2][]2}{}{}{}}
 \@LN{100}{1}
 \@LN{101}{1}
 \@LN{102}{1}
-\@LN@col{2}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Prompt template for evaluating model retrieval. The model must complete the answer with the correct city from the context.}}{2}{figure.caption.4}\protected@file@percent }
-\newlabel{fig:prompt_template}{{2}{2}{Prompt template for evaluating model retrieval. The model must complete the answer with the correct city from the context}{figure.caption.4}{}}
-\newlabel{fig:prompt_template@cref}{{[figure][2][]2}{[1][2][]2}{}{}{}}
 \@LN{103}{1}
 \@LN{104}{1}
 \@LN{105}{1}
 \@LN{106}{1}
 \@LN{107}{1}
 \@LN{108}{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Causal Intervention}{2}{subsection.4.4}\protected@file@percent }
-\newlabel{sec:causal}{{4.4}{2}{Causal Intervention}{subsection.4.4}{}}
-\newlabel{sec:causal@cref}{{[subsection][4][4]4.4}{[1][2][]2}{}{}{}}
 \@LN{109}{1}
 \@LN{110}{1}
 \@LN{111}{1}
@@ -172,6 +145,9 @@
 \@LN{114}{1}
 \@LN{115}{1}
 \@LN{116}{1}
+\@writefile{toc}{\contentsline {section}{\numberline {3}State Space Models}{2}{section.3}\protected@file@percent }
+\newlabel{sec:ssm}{{3}{2}{State Space Models}{section.3}{}}
+\newlabel{sec:ssm@cref}{{[section][3][]3}{[1][2][]2}{}{}{}}
 \@LN{117}{1}
 \@LN{118}{1}
 \@LN{119}{1}
@@ -182,68 +158,74 @@
 \@LN{124}{1}
 \@LN{125}{1}
 \@LN{126}{1}
+\@LN@col{2}
 \@LN{127}{1}
+\newlabel{eq:state_update}{{1}{2}{State Space Models}{equation.1}{}}
+\newlabel{eq:state_update@cref}{{[equation][1][]1}{[1][2][]2}{}{}{}}
 \@LN{128}{1}
+\newlabel{eq:state_query}{{2}{2}{State Space Models}{equation.2}{}}
+\newlabel{eq:state_query@cref}{{[equation][2][]2}{[1][2][]2}{}{}{}}
 \@LN{129}{1}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Results}{2}{section.5}\protected@file@percent }
-\newlabel{sec:results}{{5}{2}{Results}{section.5}{}}
-\newlabel{sec:results@cref}{{[section][5][]5}{[1][2][]2}{}{}{}}
 \@LN{130}{1}
 \@LN{131}{1}
 \@LN{132}{1}
 \@LN{133}{1}
 \@LN{134}{1}
 \@LN{135}{1}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Probing Ablation}{2}{subsection.5.1}\protected@file@percent }
-\newlabel{sec:probing_ablation}{{5.1}{2}{Probing Ablation}{subsection.5.1}{}}
-\newlabel{sec:probing_ablation@cref}{{[subsection][1][5]5.1}{[1][2][]2}{}{}{}}
 \@LN{136}{1}
 \@LN{137}{1}
 \@LN{138}{1}
 \@LN{139}{1}
+\@LN{140}{1}
+\@LN{141}{1}
+\@LN{142}{1}
+\@LN{143}{1}
+\@LN{144}{1}
+\@LN{145}{1}
+\@LN{146}{1}
+\@LN{147}{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Examples}{2}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:ssm_examples}{{3.1}{2}{Examples}{subsection.3.1}{}}
+\newlabel{sec:ssm_examples@cref}{{[subsection][1][3]3.1}{[1][2][]2}{}{}{}}
+\@LN{148}{1}
+\@LN{149}{1}
+\@LN{150}{1}
+\@writefile{toc}{\contentsline {paragraph}{Gated Linear Attention (GLA).}{2}{section*.5}\protected@file@percent }
+\@LN{151}{1}
+\@LN{152}{1}
+\newlabel{eq:gla}{{3}{2}{Gated Linear Attention (GLA)}{equation.3}{}}
+\newlabel{eq:gla@cref}{{[equation][3][]3}{[1][2][]2}{}{}{}}
+\@LN{153}{1}
+\@LN{154}{1}
+\@LN{155}{1}
+\@LN{156}{1}
+\@writefile{toc}{\contentsline {paragraph}{Mamba-2.}{2}{section*.6}\protected@file@percent }
+\@LN{157}{1}
+\newlabel{eq:mamba}{{4}{2}{Mamba-2}{equation.4}{}}
+\newlabel{eq:mamba@cref}{{[equation][4][]4}{[1][2][]2}{}{}{}}
+\@LN{158}{1}
+\@LN{159}{1}
+\@LN{160}{1}
+\@LN{161}{1}
+\@LN{162}{1}
+\@LN{163}{1}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Methodology}{2}{section.4}\protected@file@percent }
+\newlabel{sec:methodology}{{4}{2}{Methodology}{section.4}{}}
+\newlabel{sec:methodology@cref}{{[section][4][]4}{[1][2][]2}{}{}{}}
+\@LN{164}{1}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Entity-Binding Datasets}{2}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:datasets}{{4.1}{2}{Entity-Binding Datasets}{subsection.4.1}{}}
+\newlabel{sec:datasets@cref}{{[subsection][1][4]4.1}{[1][2][]2}{}{}{}}
+\@LN{165}{1}
+\@LN{166}{1}
+\@LN{167}{1}
+\@LN{168}{1}
+\@LN{169}{1}
 \@LN@col{1}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Top 10 heads ranked by \textit  {natural probe} validation accuracy on the Favorite Color dataset.}}{3}{table.caption.6}\protected@file@percent }
-\newlabel{tab:top_heads}{{1}{3}{Top 10 heads ranked by \textit {natural probe} validation accuracy on the Favorite Color dataset}{table.caption.6}{}}
-\newlabel{tab:top_heads@cref}{{[table][1][]1}{[1][3][]3}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output.}}{3}{table.caption.8}\protected@file@percent }
-\newlabel{tab:causal}{{2}{3}{Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output}{table.caption.8}{}}
-\newlabel{tab:causal@cref}{{[table][2][]2}{[1][3][]3}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Only a Small Subset of Heads Store Memory.}{3}{section*.5}\protected@file@percent }
-\@LN{140}{2}
-\@LN{141}{2}
-\@LN{142}{2}
-\@LN{143}{2}
-\@LN{144}{2}
-\@LN{145}{2}
-\@LN{146}{2}
-\@LN{147}{2}
-\@LN{148}{2}
-\@LN{149}{2}
-\@LN{150}{2}
-\@LN{151}{2}
-\@writefile{toc}{\contentsline {paragraph}{Natural Probing is the Correct Direction.}{3}{section*.7}\protected@file@percent }
-\@LN{152}{2}
-\@LN{153}{2}
-\@LN{154}{2}
-\@LN{155}{2}
-\@LN{156}{2}
-\@LN{157}{2}
-\@LN{158}{2}
-\@LN{159}{2}
-\@LN{160}{2}
-\@LN{161}{2}
-\@LN{162}{2}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Causal Effect of Memory Heads}{3}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:causal_results}{{5.2}{3}{Causal Effect of Memory Heads}{subsection.5.2}{}}
-\newlabel{sec:causal_results@cref}{{[subsection][2][5]5.2}{[1][3][]3}{}{}{}}
-\@LN{163}{2}
-\@LN{164}{2}
-\@LN{165}{2}
-\@LN{166}{2}
-\@LN{167}{2}
-\@LN@col{2}
-\@LN{168}{2}
-\@LN{169}{2}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Examples from our entity-binding datasets. Each sample contains $N_e$ entity-property pairs with one target entity whose property varies across samples.}}{3}{figure.caption.7}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:dataset_examples}{{1}{3}{Examples from our entity-binding datasets. Each sample contains $N_e$ entity-property pairs with one target entity whose property varies across samples}{figure.caption.7}{}}
+\newlabel{fig:dataset_examples@cref}{{[figure][1][]1}{[1][3][]3}{}{}{}}
 \@LN{170}{2}
 \@LN{171}{2}
 \@LN{172}{2}
@@ -252,13 +234,13 @@
 \@LN{175}{2}
 \@LN{176}{2}
 \@LN{177}{2}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}The Bottleneck is Querying, Not Storage}{3}{subsection.5.3}\protected@file@percent }
-\newlabel{sec:bottleneck}{{5.3}{3}{The Bottleneck is Querying, Not Storage}{subsection.5.3}{}}
-\newlabel{sec:bottleneck@cref}{{[subsection][3][5]5.3}{[1][3][]3}{}{}{}}
 \@LN{178}{2}
 \@LN{179}{2}
 \@LN{180}{2}
 \@LN{181}{2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Probing State Representations}{3}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:probing}{{4.2}{3}{Probing State Representations}{subsection.4.2}{}}
+\newlabel{sec:probing@cref}{{[subsection][2][4]4.2}{[1][3][]3}{}{}{}}
 \@LN{182}{2}
 \@LN{183}{2}
 \@LN{184}{2}
@@ -271,12 +253,11 @@
 \@LN{191}{2}
 \@LN{192}{2}
 \@LN{193}{2}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Universal Memory Heads}{3}{subsection.5.4}\protected@file@percent }
-\newlabel{sec:universal_heads}{{5.4}{3}{Universal Memory Heads}{subsection.5.4}{}}
-\newlabel{sec:universal_heads@cref}{{[subsection][4][5]5.4}{[1][3][]3}{}{}{}}
 \@LN{194}{2}
 \@LN{195}{2}
 \@LN{196}{2}
+\newlabel{eq:probe}{{5}{3}{Probing State Representations}{equation.5}{}}
+\newlabel{eq:probe@cref}{{[equation][5][]5}{[1][3][]3}{}{}{}}
 \@LN{197}{2}
 \@LN{198}{2}
 \@LN{199}{2}
@@ -284,11 +265,14 @@
 \@LN{201}{2}
 \@LN{202}{2}
 \@LN{203}{2}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Semantic Collision Accelerates Forgetting}{3}{subsection.5.5}\protected@file@percent }
-\newlabel{sec:semantic_collision}{{5.5}{3}{Semantic Collision Accelerates Forgetting}{subsection.5.5}{}}
-\newlabel{sec:semantic_collision@cref}{{[subsection][5][5]5.5}{[1][3][]3}{}{}{}}
 \@LN{204}{2}
+\newlabel{eq:probe_wrong}{{6}{3}{Probing State Representations}{equation.6}{}}
+\newlabel{eq:probe_wrong@cref}{{[equation][6][]6}{[1][3][]3}{}{}{}}
 \@LN{205}{2}
+\@LN@col{2}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Prompt template for evaluating model retrieval. The model must generate the correct property (e.g., ``red'') as the next token.}}{3}{figure.caption.8}\protected@file@percent }
+\newlabel{fig:prompt_template}{{2}{3}{Prompt template for evaluating model retrieval. The model must generate the correct property (e.g., ``red'') as the next token}{figure.caption.8}{}}
+\newlabel{fig:prompt_template@cref}{{[figure][2][]2}{[1][3][]3}{}{}{}}
 \@LN{206}{2}
 \@LN{207}{2}
 \@LN{208}{2}
@@ -296,52 +280,279 @@
 \@LN{210}{2}
 \@LN{211}{2}
 \@LN{212}{2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Evaluating Model Retrieval}{3}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:model_retrieval}{{4.3}{3}{Evaluating Model Retrieval}{subsection.4.3}{}}
+\newlabel{sec:model_retrieval@cref}{{[subsection][3][4]4.3}{[1][3][]3}{}{}{}}
 \@LN{213}{2}
-\@writefile{toc}{\contentsline {section}{\numberline {6}Future Work}{3}{section.6}\protected@file@percent }
-\newlabel{sec:future_work}{{6}{3}{Future Work}{section.6}{}}
-\newlabel{sec:future_work@cref}{{[section][6][]6}{[1][3][]3}{}{}{}}
 \@LN{214}{2}
 \@LN{215}{2}
+\@LN{216}{2}
+\@LN{217}{2}
+\@LN{218}{2}
+\@LN{219}{2}
+\@LN{220}{2}
+\@LN{221}{2}
+\@LN{222}{2}
+\@LN{223}{2}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Causal Intervention}{3}{subsection.4.4}\protected@file@percent }
+\newlabel{sec:causal}{{4.4}{3}{Causal Intervention}{subsection.4.4}{}}
+\newlabel{sec:causal@cref}{{[subsection][4][4]4.4}{[1][3][]3}{}{}{}}
+\@LN{224}{2}
+\@LN{225}{2}
+\@LN{226}{2}
+\@LN{227}{2}
+\@LN{228}{2}
+\@LN{229}{2}
+\@LN{230}{2}
+\@LN{231}{2}
+\@LN{232}{2}
+\@LN{233}{2}
+\@LN{234}{2}
+\@LN{235}{2}
+\@LN{236}{2}
+\@LN{237}{2}
+\@LN{238}{2}
+\@LN{239}{2}
+\@LN{240}{2}
+\@LN{241}{2}
+\@LN{242}{2}
+\@LN{243}{2}
 \@LN@col{1}
-\@LN{216}{3}
-\@LN{217}{3}
-\@LN{218}{3}
-\@LN{219}{3}
-\@LN{220}{3}
-\@LN{221}{3}
-\@LN{222}{3}
-\@LN{223}{3}
-\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{4}{section.7}\protected@file@percent }
-\newlabel{sec:conclusion}{{7}{4}{Conclusion}{section.7}{}}
-\newlabel{sec:conclusion@cref}{{[section][7][]7}{[1][4][]4}{}{}{}}
-\@LN{224}{3}
-\@LN{225}{3}
-\@LN{226}{3}
-\@LN{227}{3}
-\@LN{228}{3}
-\@LN{229}{3}
-\@LN{230}{3}
-\@LN{231}{3}
-\@LN{232}{3}
-\@LN{233}{3}
-\@LN{234}{3}
-\@LN{235}{3}
-\@LN{236}{3}
-\@LN{237}{3}
-\@LN{238}{3}
-\@LN{239}{3}
-\@LN{240}{3}
-\@LN{241}{3}
-\@LN{242}{3}
-\@LN{243}{3}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Top 10 heads ranked by \textit  {natural probe} validation accuracy on the Favorite Color dataset.}}{4}{table.caption.9}\protected@file@percent }
+\newlabel{tab:top_heads}{{1}{4}{Top 10 heads ranked by \textit {natural probe} validation accuracy on the Favorite Color dataset}{table.caption.9}{}}
+\newlabel{tab:top_heads@cref}{{[table][1][]1}{[1][4][]4}{}{}{}}
 \@LN{244}{3}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Probing Training Details}{4}{appendix.A}\protected@file@percent }
-\newlabel{app:probing}{{A}{4}{Probing Training Details}{appendix.A}{}}
-\newlabel{app:probing@cref}{{[section][1][]A}{[1][4][]4}{}{}{}}
 \@LN{245}{3}
 \@LN{246}{3}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Results}{4}{section.5}\protected@file@percent }
+\newlabel{sec:results}{{5}{4}{Results}{section.5}{}}
+\newlabel{sec:results@cref}{{[section][5][]5}{[1][4][]4}{}{}{}}
 \@LN{247}{3}
 \@LN{248}{3}
 \@LN{249}{3}
+\@LN{250}{3}
+\@LN{251}{3}
+\@LN{252}{3}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Validating the Probing Approach}{4}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:probing_ablation}{{5.1}{4}{Validating the Probing Approach}{subsection.5.1}{}}
+\newlabel{sec:probing_ablation@cref}{{[subsection][1][5]5.1}{[1][4][]4}{}{}{}}
+\@LN{253}{3}
+\@LN{254}{3}
+\@LN{255}{3}
+\@LN{256}{3}
+\@LN{257}{3}
+\@LN{258}{3}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.1}The Probe is Not Overly Powerful}{4}{subsubsection.5.1.1}\protected@file@percent }
+\newlabel{sec:probe_not_strong}{{5.1.1}{4}{The Probe is Not Overly Powerful}{subsubsection.5.1.1}{}}
+\newlabel{sec:probe_not_strong@cref}{{[subsubsection][1][5,1]5.1.1}{[1][4][]4}{}{}{}}
+\@LN{259}{3}
+\@LN{260}{3}
+\@LN{261}{3}
+\@LN{262}{3}
+\@LN{263}{3}
+\@LN{264}{3}
+\@LN{265}{3}
+\@LN{266}{3}
+\@LN{267}{3}
+\@LN{268}{3}
+\@LN{269}{3}
+\@LN{270}{3}
+\@LN{271}{3}
+\@LN{272}{3}
+\@LN{273}{3}
+\@LN{274}{3}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {5.1.2}Querying from the Right Outperforms Querying from the Left}{4}{subsubsection.5.1.2}\protected@file@percent }
+\newlabel{sec:natural_vs_nonnatural}{{5.1.2}{4}{Querying from the Right Outperforms Querying from the Left}{subsubsection.5.1.2}{}}
+\newlabel{sec:natural_vs_nonnatural@cref}{{[subsubsection][2][5,1]5.1.2}{[1][4][]4}{}{}{}}
+\@LN{275}{3}
+\@LN{276}{3}
+\@LN{277}{3}
 \@LN@col{2}
-\gdef \@abspage@last{4}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output.}}{4}{table.caption.10}\protected@file@percent }
+\newlabel{tab:causal}{{2}{4}{Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output}{table.caption.10}{}}
+\newlabel{tab:causal@cref}{{[table][2][]2}{[1][4][]4}{}{}{}}
+\@LN{278}{3}
+\@LN{279}{3}
+\@LN{280}{3}
+\@LN{281}{3}
+\@LN{282}{3}
+\@LN{283}{3}
+\@LN{284}{3}
+\@LN{285}{3}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Causal Effect of Memory Heads}{4}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:causal_results}{{5.2}{4}{Causal Effect of Memory Heads}{subsection.5.2}{}}
+\newlabel{sec:causal_results@cref}{{[subsection][2][5]5.2}{[1][4][]4}{}{}{}}
+\@LN{286}{3}
+\@LN{287}{3}
+\@LN{288}{3}
+\@LN{289}{3}
+\@LN{290}{3}
+\@LN{291}{3}
+\@LN{292}{3}
+\@LN{293}{3}
+\@LN{294}{3}
+\@LN{295}{3}
+\@LN{296}{3}
+\@LN{297}{3}
+\@LN{298}{3}
+\@LN{299}{3}
+\@LN{300}{3}
+\@LN{301}{3}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}The Bottleneck is Querying, Not Storage}{4}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:bottleneck}{{5.3}{4}{The Bottleneck is Querying, Not Storage}{subsection.5.3}{}}
+\newlabel{sec:bottleneck@cref}{{[subsection][3][5]5.3}{[1][4][]4}{}{}{}}
+\@LN{302}{3}
+\@LN{303}{3}
+\@LN{304}{3}
+\@LN{305}{3}
+\@LN{306}{3}
+\@LN{307}{3}
+\@LN{308}{3}
+\@LN{309}{3}
+\@LN{310}{3}
+\@LN{311}{3}
+\@LN{312}{3}
+\@LN{313}{3}
+\@LN{314}{3}
+\@LN{315}{3}
+\@LN{316}{3}
+\bibdata{custom}
+\bibcite{belrose2023tunedlens}{{1}{2025}{{Belrose et~al.}}{{Belrose, Ostrovsky, McKinney, Furman, Smith, Halawi, Biderman, and Steinhardt}}}
+\bibcite{borgeaud2022retro}{{2}{2022}{{Borgeaud et~al.}}{{Borgeaud, Mensch, Hoffmann, Cai, Rutherford, Millican, van~den Driessche, Lespiau, Damoc, Clark, de~Las~Casas, Guy, Menick, Ring, Hennigan, Huang, Maggiore, Jones, Cassirer, Brock, Paganini, Irving, Vinyals, Osindero, Simonyan, Rae, Elsen, and Sifre}}}
+\bibcite{dai2019transformerxl}{{3}{2019}{{Dai et~al.}}{{Dai, Yang, Yang, Carbonell, Le, and Salakhutdinov}}}
+\bibcite{elhage2021framework}{{4}{2021}{{Elhage et~al.}}{{Elhage, Nanda, Olsson, Henighan, Joseph, Mann, Askell, Bai, Chen, Conerly et~al.}}}
+\bibcite{feng2024binding}{{5}{2024}{{Feng and Steinhardt}}{{}}}
+\bibcite{gu2020hippo}{{6}{2020}{{Gu et~al.}}{{Gu, Dao, Ermon, Rudra, and Re}}}
+\bibcite{gu2021s4}{{7}{2022}{{Gu et~al.}}{{Gu, Goel, and Ré}}}
+\bibcite{gupta2022dss}{{8}{2022}{{Gupta et~al.}}{{Gupta, Gu, and Berant}}}
+\bibcite{meng2022rome}{{9}{2023}{{Meng et~al.}}{{Meng, Bau, Andonian, and Belinkov}}}
+\bibcite{rae2019compressive}{{10}{2019}{{Rae et~al.}}{{Rae, Potapenko, Jayakumar, and Lillicrap}}}
+\@LN@col{1}
+\@LN{317}{4}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}Universal Memory Heads}{5}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:universal_heads}{{5.4}{5}{Universal Memory Heads}{subsection.5.4}{}}
+\newlabel{sec:universal_heads@cref}{{[subsection][4][5]5.4}{[1][4][]5}{}{}{}}
+\@LN{318}{4}
+\@LN{319}{4}
+\@LN{320}{4}
+\@LN{321}{4}
+\@LN{322}{4}
+\@LN{323}{4}
+\@LN{324}{4}
+\@LN{325}{4}
+\@LN{326}{4}
+\@LN{327}{4}
+\@LN{328}{4}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}Semantic Collision Accelerates Forgetting}{5}{subsection.5.5}\protected@file@percent }
+\newlabel{sec:semantic_collision}{{5.5}{5}{Semantic Collision Accelerates Forgetting}{subsection.5.5}{}}
+\newlabel{sec:semantic_collision@cref}{{[subsection][5][5]5.5}{[1][5][]5}{}{}{}}
+\@LN{329}{4}
+\@LN{330}{4}
+\@LN{331}{4}
+\@LN{332}{4}
+\@LN{333}{4}
+\@LN{334}{4}
+\@LN{335}{4}
+\@LN{336}{4}
+\@LN{337}{4}
+\@LN{338}{4}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Future Work}{5}{section.6}\protected@file@percent }
+\newlabel{sec:future_work}{{6}{5}{Future Work}{section.6}{}}
+\newlabel{sec:future_work@cref}{{[section][6][]6}{[1][5][]5}{}{}{}}
+\@LN{339}{4}
+\@LN{340}{4}
+\@LN{341}{4}
+\@LN{342}{4}
+\@LN{343}{4}
+\@LN{344}{4}
+\@LN{345}{4}
+\@LN{346}{4}
+\@LN{347}{4}
+\@LN{348}{4}
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{5}{section.7}\protected@file@percent }
+\newlabel{sec:conclusion}{{7}{5}{Conclusion}{section.7}{}}
+\newlabel{sec:conclusion@cref}{{[section][7][]7}{[1][5][]5}{}{}{}}
+\@LN{349}{4}
+\@LN{350}{4}
+\@LN{351}{4}
+\@LN{352}{4}
+\@LN{353}{4}
+\@LN{354}{4}
+\@LN{355}{4}
+\@LN{356}{4}
+\@LN{357}{4}
+\@LN{358}{4}
+\@LN{359}{4}
+\@LN{360}{4}
+\@LN{361}{4}
+\@LN{362}{4}
+\@LN{363}{4}
+\@LN@col{2}
+\@LN{364}{4}
+\@LN{365}{4}
+\@LN{366}{4}
+\@LN{367}{4}
+\@LN{368}{4}
+\@LN{369}{4}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Probing Training Details}{5}{appendix.A}\protected@file@percent }
+\newlabel{app:probing}{{A}{5}{Probing Training Details}{appendix.A}{}}
+\newlabel{app:probing@cref}{{[section][1][]A}{[1][5][]5}{}{}{}}
+\@LN{370}{4}
+\@LN{371}{4}
+\@LN{372}{4}
+\@LN{373}{4}
+\@LN{374}{4}
+\@LN{375}{4}
+\@LN{376}{4}
+\@LN{377}{4}
+\@LN{378}{4}
+\@LN{379}{4}
+\@LN{380}{4}
+\@LN{381}{4}
+\@LN{382}{4}
+\@LN{383}{4}
+\@LN{384}{4}
+\@LN{385}{4}
+\@LN{386}{4}
+\@LN{387}{4}
+\@LN{388}{4}
+\@LN{389}{4}
+\@LN{390}{4}
+\@LN{391}{4}
+\@LN{392}{4}
+\@LN{393}{4}
+\@LN{394}{4}
+\@LN{395}{4}
+\@LN{396}{4}
+\@LN{397}{4}
+\@LN{398}{4}
+\@LN{399}{4}
+\@LN{400}{4}
+\@LN{401}{4}
+\@LN{402}{4}
+\@LN{403}{4}
+\@LN{404}{4}
+\@LN{405}{4}
+\@LN{406}{4}
+\@LN{407}{4}
+\@LN{408}{4}
+\@LN{409}{4}
+\@LN{410}{4}
+\@LN{411}{4}
+\@LN{412}{4}
+\@LN{413}{4}
+\bibcite{vaswani2017attention}{{11}{2023}{{Vaswani et~al.}}{{Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin}}}
+\bibcite{zhang2023patching}{{12}{2024}{{Zhang and Nanda}}{{}}}
+\@LN@col{1}
+\@LN{414}{5}
+\@LN{415}{5}
+\@LN{416}{5}
+\@LN{417}{5}
+\@LN{418}{5}
+\@LN{419}{5}
+\@LN{420}{5}
+\@LN{421}{5}
+\@LN{422}{5}
+\@LN{423}{5}
+\@LN@col{2}
+\gdef \@abspage@last{6}
