@@ -248,7 +248,14 @@ This concentration of high-accuracy probes in a small subset of heads, rather th
 
 The \textit{natural probe} (querying from the right) significantly outperforms the \textit{non-natural probe} (querying from the left): the best \textit{natural probe} reaches 96.3\%, while the best \textit{non-natural probe} achieves only 70.8\%.
 
-This gap confirms that memory is encoded in a manner consistent with the model's native query mechanism (\cref{eq:state_query}). Probing from the right extracts information effectively; probing from the left does not. \TODO{add figure from poster}
+This gap confirms that memory is encoded in a manner consistent with the model's native query mechanism (\cref{eq:state_query}). Probing from the right extracts information effectively; probing from the left does not. \cref{fig:natural_vs_non} visualizes this comparison across the top 10 heads for each probe type.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{natural_vs_non.png}
+\caption{Comparison of \textit{natural probe} (querying from the right) versus \textit{non-natural probe} (querying from the left) accuracy on the Favorite Color dataset. Each point represents the best probe for a given head, ranked by accuracy. The natural probe consistently outperforms the non-natural probe, with the gap widening at higher ranks.}
+\label{fig:natural_vs_non}
+\end{figure}
 
 \subsection{Causal Effect of Memory Heads}
 \label{sec:causal_results}
@@ -288,7 +295,14 @@ This finding challenges the common assumption that SSMs' limitations stem from i
 
 We analyze whether the same heads are important across different semantic domains by comparing top-performing heads on the Favorite Color dataset versus Lives in City.
 
-We find substantial overlap: \textbf{7 of the top 10 heads are shared across both datasets}. This suggests the existence of \emph{universal memory heads} that specialize in entity-property binding regardless of semantic content. We defer investigation of the mechanism underlying these heads to future work.
+We find substantial overlap: \textbf{7 of the top 10 heads are shared across both datasets}. \cref{fig:universal_heads} visualizes this overlap, showing that the majority of top-performing heads are consistent across semantically distinct tasks. This suggests the existence of \emph{universal memory heads} that specialize in entity-property binding regardless of semantic content. We defer investigation of the mechanism underlying these heads to future work.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\columnwidth]{universal_heads.png}
+\caption{Overlap of top 10 heads ranked by \textit{natural probe} accuracy across two different datasets. Seven heads (shown in the intersection) achieve high accuracy on both Favorite Color and Lives in City tasks, demonstrating domain-general memory storage capabilities.}
+\label{fig:universal_heads}
+\end{figure}
 
 \subsection{Semantic Collision Accelerates Forgetting}
 \label{sec:semantic_collision}
