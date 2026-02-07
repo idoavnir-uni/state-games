@@ -1,25 +1,25 @@
 \section{Related Work}
 \label{sec:related_work}
 
-\paragraph{Memory in Transformers.}
-Transformers implement in-context memory primarily through self-attention, where
-each token can retrieve information from earlier positions by computing
-content-dependent weights over key--value pairs \cite{vaswani2017attention}.
-This mechanism is often viewed as a form of differentiable, content-addressable
-memory: rather than compressing the past into a single recurrent state, the
-model maintains access to a growing set of past representations, enabling
-flexible retrieval and composition over the entire context window. A large body
-of work has therefore focused on extending the effective context length or
-augmenting the model with additional memory beyond the fixed window. Notable
-approaches include recurrence across segments (Transformer-XL), which reuses
-previous hidden states to model dependencies beyond a fixed-length context
-\cite{dai2019transformerxl}, compressing older memories to preserve long-range
-information under a bounded compute budget \cite{rae2019compressive}, and
-retrieval-augmented language modeling, which explicitly consults an external
-datastore during generation \cite{borgeaud2022retro}. These methods primarily
-target \emph{memory availability} (how much information can be brought into the
-computation) and \emph{access} (how that information can be retrieved when
-needed).
+%\paragraph{Memory in Transformers.}
+%Transformers implement in-context memory primarily through self-attention, where
+%each token can retrieve information from earlier positions by computing
+%content-dependent weights over key--value pairs \cite{vaswani2017attention}.
+%This mechanism is often viewed as a form of differentiable, content-addressable
+%memory: rather than compressing the past into a single recurrent state, the
+%model maintains access to a growing set of past representations, enabling
+%flexible retrieval and composition over the entire context window. A large body
+%of work has therefore focused on extending the effective context length or
+%augmenting the model with additional memory beyond the fixed window. Notable
+%approaches include recurrence across segments (Transformer-XL), which reuses
+%previous hidden states to model dependencies beyond a fixed-length context
+% \cite{dai2019transformerxl}, compressing older memories to preserve long-range
+%information under a bounded compute budget \cite{rae2019compressive}, and
+%retrieval-augmented language modeling, which explicitly consults an external
+%datastore during generation \cite{borgeaud2022retro}. These methods primarily
+%target \emph{memory availability} (how much information can be brought into the
+%computation) and \emph{access} (how that information can be retrieved when
+%needed).
 
 %\paragraph{Sub-quadratic attention and memory.}
 %Since standard attention scales quadratically with sequence length, efficient
@@ -38,42 +38,96 @@ needed).
 %affecting apparent memory performance even when the nominal context length is
 %unchanged.
 
+%\paragraph{Attention-free sub-quadratic sequence models.}
+%A complementary line of work achieves sub-quadratic (often linear-time)
+%inference by replacing attention with recurrent or convolutional updates that
+%compress the past into a fixed-size state. State space models (SSMs) provide a
+%particularly unified view: they maintain an internal state updated online and
+%produce outputs via a readout from that state. Foundational work on HiPPO
+%introduced principled mechanisms for online compression of history via
+%projections \cite{gu2020hippo}. Building on these ideas, structured
+%parameterizations such as S4 made SSMs computationally practical and competitive
+%on long-range tasks \cite{gu2021s4}, and subsequent simplifications like DSS
+%showed that diagonal state parameterizations can retain much of S4's
+%effectiveness \cite{gupta2022dss}. Modern language-model-scale architectures
+%(e.g., selective SSMs and gated linear attention variants) can often be
+%interpreted as instances of this broader paradigm: the model stores information
+%in a recurrent state and must \emph{query} or \emph{read} from it during
+%generation.
+
 \paragraph{Attention-free sub-quadratic sequence models.}
-A complementary line of work achieves sub-quadratic (often linear-time)
-inference by replacing attention with recurrent or convolutional updates that
-compress the past into a fixed-size state. State space models (SSMs) provide a
-particularly unified view: they maintain an internal state updated online and
-produce outputs via a readout from that state. Foundational work on HiPPO
-introduced principled mechanisms for online compression of history via
-projections \cite{gu2020hippo}. Building on these ideas, structured
-parameterizations such as S4 made SSMs computationally practical and competitive
-on long-range tasks \cite{gu2021s4}, and subsequent simplifications like DSS
-showed that diagonal state parameterizations can retain much of S4's
-effectiveness \cite{gupta2022dss}. Modern language-model-scale architectures
-(e.g., selective SSMs and gated linear attention variants) can often be
-interpreted as instances of this broader paradigm: the model stores information
-in a recurrent state and must \emph{query} or \emph{read} from it during
-generation.
+Recent ``linear recurrent'' language-model backbones replace token--token
+softmax attention with an explicit recurrent state updated online, enabling
+linear-time inference and constant per-token memory.
+This family includes structured state space models and closely related
+linear-attention-as-recurrence formulations, spanning S4-style layers and their
+simplifications \cite{gu2021s4,smith2022s5,gupta2022dss,gu2022s4dparam},
+selective SSM architectures such as Mamba \cite{gu2023mamba},
+and Transformer/RNN hybrids such as RWKV \cite{peng2023rwkv}.
+A central theme in improving \emph{memory and recall} in these models is
+\emph{controlling forgetting} through input-dependent gating or decay
+\cite{gu2023mamba,peng2023rwkv,peng2025rwkv7,yang2023gla}.
+Complementary work increases \emph{effective state capacity} and state-tracking
+ability---often framed as a key bottleneck for in-context retrieval---by moving
+from purely additive updates to delta-rule or gated-delta updates and related
+state-expansion mechanisms \cite{yang2024deltanet,yang2024gateddeltanet,siems2025deltaproduct,grazzi2024statetracking}.
+%Another line improves long-context retention via multi-scale or chunkwise
+%recurrent computation, which summarizes history at multiple timescales while
+%remaining parallelizable during training \cite{sun2023retnet}.
+Finally, several works refine the SSM layer/algorithm itself (e.g., more stable
+parameterizations/initializations and dual views that connect SSMs to masked
+attention), enabling more reliable long-range modeling and more efficient
+long-sequence training/inference \cite{gu2022s4dparam,smith2022s5,dao2024ssmduality,fu2022h3}.
+
+
+%\paragraph{Entity binding as an in-context memory primitive.}
+%Entity--attribute binding tasks probe a core capability underlying factual
+%recall and multi-entity reasoning: given a context describing several entities
+%and their properties, the model must correctly bind each property to its
+%corresponding entity at query time. Recent work has used controlled settings to
+%study how binding is represented internally; for example, Feng and Steinhardt
+%identify a ``binding ID'' mechanism and use causal interventions to argue that
+%models attach binding-related vectors to entity and attribute positions
+%\cite{feng2024binding}. Such findings motivate synthetic entity-binding
+%evaluations as a targeted lens on in-context memory that avoids confounds from
+%pretraining knowledge. Our entity-binding datasets are in this spirit, but we
+%focus on sub-quadratic models whose memory is mediated by a recurrent state:
+%this shifts the emphasis from \emph{Can tokens attend to the right binding} to
+%\emph{which bindings are present in the compressed state and how the model
+%queries them}. In particular, by comparing what can be decoded from the state to
+%what the model actually retrieves during generation, we align entity binding
+%with a concrete hypothesis about the failure mode in sub-quadratic
+%architectures: a potential mismatch between \emph{stored} information and the
+%model's \emph{query} mechanism.
+
 
 \paragraph{Entity binding as an in-context memory primitive.}
-Entity--attribute binding tasks probe a core capability underlying factual
-recall and multi-entity reasoning: given a context describing several entities
-and their properties, the model must correctly bind each property to its
-corresponding entity at query time. Recent work has used controlled settings to
-study how binding is represented internally; for example, Feng and Steinhardt
-identify a ``binding ID'' mechanism and use causal interventions to argue that
-models attach binding-related vectors to entity and attribute positions
-\cite{feng2024binding}. Such findings motivate synthetic entity-binding
-evaluations as a targeted lens on in-context memory that avoids confounds from
-pretraining knowledge. Our entity-binding datasets are in this spirit, but we
-focus on sub-quadratic models whose memory is mediated by a recurrent state:
-this shifts the emphasis from \emph{Can tokens attend to the right binding} to
-\emph{which bindings are present in the compressed state and how the model
-queries them}. In particular, by comparing what can be decoded from the state to
-what the model actually retrieves during generation, we align entity binding
-with a concrete hypothesis about the failure mode in sub-quadratic
-architectures: a potential mismatch between \emph{stored} information and the
-model's \emph{query} mechanism.
+Entity--attribute binding tasks offer a controlled probe of in-context memory:
+the model must maintain multiple concurrent associations (e.g., a key-value dictionary) and retrieve the
+correct one at query time, without relying on pretraining knowledge. Significant
+Recent work has emphasized \emph{synthetic} binding and entity-tracking
+setups---from static multi-entity attribute binding prompts to procedurally
+generated state-update narratives---that precisely control the number of
+entities, interference, and context length
+\cite{feng2024binding,kim2023entitytracking,prakash2024finetuning,dai2024bindinganalysis}.
+Interpretability studies on these benchmarks suggest that successful LMs allocate
+dedicated representational degrees of freedom that act like \emph{identifiers}
+for bindings: Some argue for a ``binding ID'' subspace attached
+to entity and attribute token positions \cite{feng2024binding};
+follow-up representational and causal analyses refine this picture by isolating
+low-rank directions encoding order-related signals that govern binding behavior
+\cite{dai2024bindinganalysis}.
+Complementary mechanistic work on synthetic \emph{variable} binding further
+supports the view that binding can be mediated by sparse, specialized circuits
+that are discoverable via automated causal localization and patching
+\cite{davies2023desiderata,wu2025variablebinding}.
+Our entity-binding datasets follow this controlled regime, but we target
+sub-quadratic recurrent-state models where bindings must be retained in a
+compressed state; this shifts the emphasis from \emph{whether the model attends
+to the correct key-value pair} to \emph{which bindings persist in the state and whether the
+model’s query mechanism is able to retrieves them}.
+
+
 
 \paragraph{Interpretability tools for studying memory mechanisms.}
 Our work sits within mechanistic interpretability, which aims to localize and
