@@ -1,17 +1,21 @@
-\begin{thebibliography}{12}
+\begin{thebibliography}{24}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{Belrose et~al.(2025)Belrose, Ostrovsky, McKinney, Furman, Smith, Halawi, Biderman, and Steinhardt}]{belrose2023tunedlens}
 Nora Belrose, Igor Ostrovsky, Lev McKinney, Zach Furman, Logan Smith, Danny Halawi, Stella Biderman, and Jacob Steinhardt. 2025.
 \newblock \href {http://arxiv.org/abs/2303.08112} {Eliciting latent predictions from transformers with the tuned lens}.
 
-\bibitem[{Borgeaud et~al.(2022)Borgeaud, Mensch, Hoffmann, Cai, Rutherford, Millican, van~den Driessche, Lespiau, Damoc, Clark, de~Las~Casas, Guy, Menick, Ring, Hennigan, Huang, Maggiore, Jones, Cassirer, Brock, Paganini, Irving, Vinyals, Osindero, Simonyan, Rae, Elsen, and Sifre}]{borgeaud2022retro}
-Sebastian Borgeaud, Arthur Mensch, Jordan Hoffmann, Trevor Cai, Eliza Rutherford, Katie Millican, George van~den Driessche, Jean-Baptiste Lespiau, Bogdan Damoc, Aidan Clark, Diego de~Las~Casas, Aurelia Guy, Jacob Menick, Roman Ring, Tom Hennigan, Saffron Huang, Loren Maggiore, Chris Jones, Albin Cassirer, Andy Brock, Michela Paganini, Geoffrey Irving, Oriol Vinyals, Simon Osindero, Karen Simonyan, Jack~W. Rae, Erich Elsen, and Laurent Sifre. 2022.
-\newblock \href {http://arxiv.org/abs/2112.04426} {Improving language models by retrieving from trillions of tokens}.
+\bibitem[{Dai et~al.(2024)Dai, Heinzerling, and Inui}]{dai2024bindinganalysis}
+Qin Dai, Benjamin Heinzerling, and Kentaro Inui. 2024.
+\newblock \href {http://arxiv.org/abs/2409.05448} {Representational analysis of binding in language models}.
 
-\bibitem[{Dai et~al.(2019)Dai, Yang, Yang, Carbonell, Le, and Salakhutdinov}]{dai2019transformerxl}
-Zihang Dai, Zhilin Yang, Yiming Yang, Jaime Carbonell, Quoc~V. Le, and Ruslan Salakhutdinov. 2019.
-\newblock \href {http://arxiv.org/abs/1901.02860} {Transformer-xl: Attentive language models beyond a fixed-length context}.
+\bibitem[{Dao and Gu(2024)}]{dao2024ssmduality}
+Tri Dao and Albert Gu. 2024.
+\newblock \href {http://arxiv.org/abs/2405.21060} {Transformers are ssms: Generalized models and efficient algorithms through structured state space duality}.
+
+\bibitem[{Davies et~al.(2023)Davies, Nadeau, Prakash, Shaham, and Bau}]{davies2023desiderata}
+Xander Davies, Max Nadeau, Nikhil Prakash, Tamar~Rott Shaham, and David Bau. 2023.
+\newblock \href {http://arxiv.org/abs/2307.03637} {Discovering variable binding circuitry with desiderata}.
 
 \bibitem[{Elhage et~al.(2021)Elhage, Nanda, Olsson, Henighan, Joseph, Mann, Askell, Bai, Chen, Conerly et~al.}]{elhage2021framework}
 Nelson Elhage, Neel Nanda, Catherine Olsson, Tom Henighan, Nicholas Joseph, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen, Tom Conerly, et~al. 2021.
@@ -21,29 +25,73 @@ Nelson Elhage, Neel Nanda, Catherine Olsson, Tom Henighan, Nicholas Joseph, Ben 
 Jiahai Feng and Jacob Steinhardt. 2024.
 \newblock \href {http://arxiv.org/abs/2310.17191} {How do language models bind entities in context?}
 
-\bibitem[{Gu et~al.(2020)Gu, Dao, Ermon, Rudra, and Re}]{gu2020hippo}
-Albert Gu, Tri Dao, Stefano Ermon, Atri Rudra, and Christopher Re. 2020.
-\newblock \href {http://arxiv.org/abs/2008.07669} {Hippo: Recurrent memory with optimal polynomial projections}.
+\bibitem[{Fu et~al.(2023)Fu, Dao, Saab, Thomas, Rudra, and Ré}]{fu2022h3}
+Daniel~Y. Fu, Tri Dao, Khaled~K. Saab, Armin~W. Thomas, Atri Rudra, and Christopher Ré. 2023.
+\newblock \href {http://arxiv.org/abs/2212.14052} {Hungry hungry hippos: Towards language modeling with state space models}.
 
-\bibitem[{Gu et~al.(2022)Gu, Goel, and Ré}]{gu2021s4}
-Albert Gu, Karan Goel, and Christopher Ré. 2022.
+\bibitem[{Grazzi et~al.(2025)Grazzi, Siems, Zela, Franke, Hutter, and Pontil}]{grazzi2024statetracking}
+Riccardo Grazzi, Julien Siems, Arber Zela, Jörg K.~H. Franke, Frank Hutter, and Massimiliano Pontil. 2025.
+\newblock \href {http://arxiv.org/abs/2411.12537} {Unlocking state-tracking in linear rnns through negative eigenvalues}.
+
+\bibitem[{Gu and Dao(2024)}]{gu2023mamba}
+Albert Gu and Tri Dao. 2024.
+\newblock \href {http://arxiv.org/abs/2312.00752} {Mamba: Linear-time sequence modeling with selective state spaces}.
+
+\bibitem[{Gu et~al.(2022{\natexlab{a}})Gu, Goel, and Ré}]{gu2021s4}
+Albert Gu, Karan Goel, and Christopher Ré. 2022{\natexlab{a}}.
 \newblock \href {http://arxiv.org/abs/2111.00396} {Efficiently modeling long sequences with structured state spaces}.
+
+\bibitem[{Gu et~al.(2022{\natexlab{b}})Gu, Gupta, Goel, and Ré}]{gu2022s4dparam}
+Albert Gu, Ankit Gupta, Karan Goel, and Christopher Ré. 2022{\natexlab{b}}.
+\newblock \href {http://arxiv.org/abs/2206.11893} {On the parameterization and initialization of diagonal state space models}.
 
 \bibitem[{Gupta et~al.(2022)Gupta, Gu, and Berant}]{gupta2022dss}
 Ankit Gupta, Albert Gu, and Jonathan Berant. 2022.
 \newblock \href {http://arxiv.org/abs/2203.14343} {Diagonal state spaces are as effective as structured state spaces}.
 
+\bibitem[{Kim and Schuster(2023)}]{kim2023entitytracking}
+Najoung Kim and Sebastian Schuster. 2023.
+\newblock \href {http://arxiv.org/abs/2305.02363} {Entity tracking in language models}.
+
 \bibitem[{Meng et~al.(2023)Meng, Bau, Andonian, and Belinkov}]{meng2022rome}
 Kevin Meng, David Bau, Alex Andonian, and Yonatan Belinkov. 2023.
 \newblock \href {http://arxiv.org/abs/2202.05262} {Locating and editing factual associations in gpt}.
 
-\bibitem[{Rae et~al.(2019)Rae, Potapenko, Jayakumar, and Lillicrap}]{rae2019compressive}
-Jack~W. Rae, Anna Potapenko, Siddhant~M. Jayakumar, and Timothy~P. Lillicrap. 2019.
-\newblock \href {http://arxiv.org/abs/1911.05507} {Compressive transformers for long-range sequence modelling}.
+\bibitem[{Peng et~al.(2023)Peng, Alcaide, Anthony, Albalak, Arcadinho, Biderman, Cao, Cheng, Chung, Grella, GV, He, Hou, Lin, Kazienko, Kocon, Kong, Koptyra, Lau, Mantri, Mom, Saito, Song, Tang, Wang, Wind, Wozniak, Zhang, Zhang, Zhao, Zhou, Zhou, Zhu, and Zhu}]{peng2023rwkv}
+Bo~Peng, Eric Alcaide, Quentin Anthony, Alon Albalak, Samuel Arcadinho, Stella Biderman, Huanqi Cao, Xin Cheng, Michael Chung, Matteo Grella, Kranthi~Kiran GV, Xuzheng He, Haowen Hou, Jiaju Lin, Przemyslaw Kazienko, Jan Kocon, Jiaming Kong, Bartlomiej Koptyra, Hayden Lau, Krishna Sri~Ipsit Mantri, Ferdinand Mom, Atsushi Saito, Guangyu Song, Xiangru Tang, Bolun Wang, Johan~S. Wind, Stanislaw Wozniak, Ruichong Zhang, Zhenyuan Zhang, Qihang Zhao, Peng Zhou, Qinghua Zhou, Jian Zhu, and Rui-Jie Zhu. 2023.
+\newblock \href {http://arxiv.org/abs/2305.13048} {Rwkv: Reinventing rnns for the transformer era}.
 
-\bibitem[{Vaswani et~al.(2023)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin}]{vaswani2017attention}
-Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N. Gomez, Lukasz Kaiser, and Illia Polosukhin. 2023.
-\newblock \href {http://arxiv.org/abs/1706.03762} {Attention is all you need}.
+\bibitem[{Peng et~al.(2025)Peng, Zhang, Goldstein, Alcaide, Du, Hou, Lin, Liu, Lu, Merrill, Song, Tan, Utpala, Wilce, Wind, Wu, Wuttke, and Zhou-Zheng}]{peng2025rwkv7}
+Bo~Peng, Ruichong Zhang, Daniel Goldstein, Eric Alcaide, Xingjian Du, Haowen Hou, Jiaju Lin, Jiaxing Liu, Janna Lu, William Merrill, Guangyu Song, Kaifeng Tan, Saiteja Utpala, Nathan Wilce, Johan~S. Wind, Tianyi Wu, Daniel Wuttke, and Christian Zhou-Zheng. 2025.
+\newblock \href {http://arxiv.org/abs/2503.14456} {Rwkv-7 "goose" with expressive dynamic state evolution}.
+
+\bibitem[{Prakash et~al.(2024)Prakash, Shaham, Haklay, Belinkov, and Bau}]{prakash2024finetuning}
+Nikhil Prakash, Tamar~Rott Shaham, Tal Haklay, Yonatan Belinkov, and David Bau. 2024.
+\newblock \href {http://arxiv.org/abs/2402.14811} {Fine-tuning enhances existing mechanisms: A case study on entity tracking}.
+
+\bibitem[{Siems et~al.(2025)Siems, Carstensen, Zela, Hutter, Pontil, and Grazzi}]{siems2025deltaproduct}
+Julien Siems, Timur Carstensen, Arber Zela, Frank Hutter, Massimiliano Pontil, and Riccardo Grazzi. 2025.
+\newblock \href {http://arxiv.org/abs/2502.10297} {Deltaproduct: Improving state-tracking in linear rnns via householder products}.
+
+\bibitem[{Smith et~al.(2023)Smith, Warrington, and Linderman}]{smith2022s5}
+Jimmy T.~H. Smith, Andrew Warrington, and Scott~W. Linderman. 2023.
+\newblock \href {http://arxiv.org/abs/2208.04933} {Simplified state space layers for sequence modeling}.
+
+\bibitem[{Wu et~al.(2025)Wu, Geiger, and Millière}]{wu2025variablebinding}
+Yiwei Wu, Atticus Geiger, and Raphaël Millière. 2025.
+\newblock \href {http://arxiv.org/abs/2505.20896} {How do transformers learn variable binding in symbolic programs?}
+
+\bibitem[{Yang et~al.(2025{\natexlab{a}})Yang, Kautz, and Hatamizadeh}]{yang2024gateddeltanet}
+Songlin Yang, Jan Kautz, and Ali Hatamizadeh. 2025{\natexlab{a}}.
+\newblock \href {http://arxiv.org/abs/2412.06464} {Gated delta networks: Improving mamba2 with delta rule}.
+
+\bibitem[{Yang et~al.(2024)Yang, Wang, Shen, Panda, and Kim}]{yang2023gla}
+Songlin Yang, Bailin Wang, Yikang Shen, Rameswar Panda, and Yoon Kim. 2024.
+\newblock \href {http://arxiv.org/abs/2312.06635} {Gated linear attention transformers with hardware-efficient training}.
+
+\bibitem[{Yang et~al.(2025{\natexlab{b}})Yang, Wang, Zhang, Shen, and Kim}]{yang2024deltanet}
+Songlin Yang, Bailin Wang, Yu~Zhang, Yikang Shen, and Yoon Kim. 2025{\natexlab{b}}.
+\newblock \href {http://arxiv.org/abs/2406.06484} {Parallelizing linear transformers with the delta rule over sequence length}.
 
 \bibitem[{Zhang and Nanda(2024)}]{zhang2023patching}
 Fred Zhang and Neel Nanda. 2024.

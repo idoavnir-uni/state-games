@@ -8,44 +8,62 @@ Reallocated glb_str_end (elt_size=4) to 20 items from 10.
 Reallocated singl_function (elt_size=4) to 100 items from 50.
 Database file #1: custom.bib
 Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
-You've used 12 entries,
+Warning--empty journal in dai2024bindinganalysis
+Warning--empty journal in dao2024ssmduality
+Warning--empty journal in davies2023desiderata
+Warning--empty journal in fu2022h3
+Warning--empty journal in grazzi2024statetracking
+Warning--empty journal in gu2023mamba
+Warning--empty journal in gu2022s4dparam
+Warning--empty booktitle in kim2023entitytracking
+Warning--empty journal in peng2023rwkv
+Warning--empty journal in peng2025rwkv7
+Warning--empty booktitle in prakash2024finetuning
+Warning--empty journal in siems2025deltaproduct
+Warning--empty journal in smith2022s5
+Warning--empty booktitle in wu2025variablebinding
+Warning--empty journal in yang2024gateddeltanet
+Warning--empty journal in yang2023gla
+Warning--empty journal in yang2024deltanet
+You've used 24 entries,
             3571 wiz_defined-function locations,
-            759 strings with 8334 characters,
-and the built_in function-call counts, 9427 in all, are:
-= -- 661
-> -- 815
-< -- 2
-+ -- 266
-- -- 252
-* -- 770
-:= -- 1576
-add.period$ -- 36
-call.type$ -- 12
-change.case$ -- 143
-chr.to.int$ -- 12
-cite$ -- 12
-duplicate$ -- 540
-empty$ -- 478
-format.name$ -- 292
-if$ -- 1917
-int.to.chr$ -- 1
+            817 strings with 10789 characters,
+and the built_in function-call counts, 18474 in all, are:
+= -- 1281
+> -- 1438
+< -- 9
++ -- 463
+- -- 435
+* -- 1482
+:= -- 2968
+add.period$ -- 72
+call.type$ -- 24
+change.case$ -- 264
+chr.to.int$ -- 26
+cite$ -- 41
+duplicate$ -- 1152
+empty$ -- 1062
+format.name$ -- 517
+if$ -- 3815
+int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 120
-newline$ -- 52
-num.names$ -- 48
-pop$ -- 297
+missing$ -- 257
+newline$ -- 100
+num.names$ -- 96
+pop$ -- 677
 preamble$ -- 1
-purify$ -- 131
+purify$ -- 240
 quote$ -- 0
-skip$ -- 317
+skip$ -- 698
 stack$ -- 0
-substring$ -- 134
-swap$ -- 274
+substring$ -- 270
+swap$ -- 534
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 108
-warning$ -- 0
-while$ -- 36
+type$ -- 216
+warning$ -- 17
+while$ -- 72
 width$ -- 0
-write$ -- 123
+write$ -- 243
+(There were 17 warnings)
