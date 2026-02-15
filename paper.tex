@@ -307,7 +307,24 @@ We find substantial overlap: \textbf{7 of the top 10 heads are shared across bot
 \subsection{Semantic Collision Accelerates Forgetting}
 \label{sec:semantic_collision}
 
-We investigate how context affects memory retention by measuring probe accuracy as a function of token distance from the information. We observe that \textbf{increased semantic similarity between the prompt content and the target subject accelerates the model's forgetting rate}. When subsequent sentences discuss similar entities, probe accuracy degrades faster than when the intervening content is semantically distinct.
+We investigate how context affects memory retention by measuring probe accuracy as a function of token distance from the information. We observe that \textbf{increased semantic similarity between the prompt content and the target subject accelerates the model's forgetting rate}. 
+When subsequent sentences discuss similar entities, probe accuracy degrades faster than when the intervening content is semantically distinct.
+More specifically, we create two types of datasets: a homogeneous dataset containing only sentences of one type (e.g., "Lady Gaga's favorite animal is Fox"), 
+and a mixed dataset that combines sentences from two different domains (e.g., favorite animals and favorite colors) in a ratio where the target domain represents only a small fraction (roughly 1/30) of the total sentences.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{compare_standalone_vs_combined_accuracy_top_3.png}
+\caption{Top 3 accuracy of the homogeneous and mixed data probes on homogeneous and mixed data as a function of token distance from the binding pair we query.}
+\label{fig:compare_accuracy_top_3}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{compare_standalone_vs_combined_top_1.png}
+\caption{Top 1 accuracy of the homogeneous and mixed data probes on homogeneous and mixed data as a function of token distance from the binding pair we query.}
+\label{fig:compare_top_1}
+\end{figure}
 
 % =============================================================================
 % Future Work
