@@ -303,6 +303,16 @@ INPUT ./universal_heads.png
 INPUT ./universal_heads.png
 INPUT ./universal_heads.png
 INPUT ./universal_heads.png
+INPUT ./compare_standalone_vs_combined_accuracy_top_3.png
+INPUT ./compare_standalone_vs_combined_accuracy_top_3.png
+INPUT ./compare_standalone_vs_combined_accuracy_top_3.png
+INPUT ./compare_standalone_vs_combined_accuracy_top_3.png
+INPUT ./compare_standalone_vs_combined_accuracy_top_3.png
+INPUT ./compare_standalone_vs_combined_top_1.png
+INPUT ./compare_standalone_vs_combined_top_1.png
+INPUT ./compare_standalone_vs_combined_top_1.png
+INPUT ./compare_standalone_vs_combined_top_1.png
+INPUT ./compare_standalone_vs_combined_top_1.png
 INPUT ./paper.bbl
 INPUT ./paper.bbl
 INPUT paper.bbl

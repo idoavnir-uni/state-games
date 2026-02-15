@@ -1,15 +1,15 @@
 # Fdb version 4
-["bibtex paper"] 1770674980.3578 "paper.aux" "paper.bbl" "paper" 1770674985.68458 0
+["bibtex paper"] 1771197804.1814 "paper.aux" "paper.bbl" "paper" 1771197809.64906 0
   "./acl_natbib.bst" 1667437310 47709 d9d0ab22329e3318a3d1b2ae6abaab62 ""
   "./custom.bib" 1770674966 16473 cc276cef5be564fdd049137f64f9f93a ""
-  "paper.aux" 1770674983 19949 15d0a522c41aa846ec4557f347c3b066 "pdflatex"
+  "paper.aux" 1771197807 21187 b149ffbabe9243a3e7e753c196c035c9 "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1770674981.34336 "c:/Users/yuvmi/mor_course/state-games/paper.tex" "paper.pdf" "paper" 1770674985.68545 0
+["pdflatex"] 1771197804.86632 "c:/Users/yuvmi/mor_course/state-games/paper.tex" "paper.pdf" "paper" 1771197809.65011 0
   "acl.sty" 1763030808 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "c:/Users/yuvmi/mor_course/state-games/paper.tex" 1770674966 20521 71cf7c0b2abdc6406fccf6ea89692bb2 ""
+  "c:/Users/yuvmi/mor_course/state-games/paper.tex" 1771197796 21625 2032104c09b49f2efa002a436b9d73c3 ""
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1754308853 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "c:/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1754310034 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "c:/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1754309404 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -157,11 +157,13 @@
   "c:/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1754329373 5572357 f0501b90ab048e2d9ec23d8a1bf903b2 ""
   "c:/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1754329858 3605804 ee2d821a3926ad51034c90f2cb27727b ""
   "c:/texlive/2025/texmf.cnf" 1754329336 713 e69b156964470283e0530f5060668171 ""
+  "compare_standalone_vs_combined_accuracy_top_3.png" 1771197762 158591 7ef5ad1c873c043a4a239f8a1cc9f1fb ""
+  "compare_standalone_vs_combined_top_1.png" 1771197762 156238 20b0e3016da8aaf8ee0687a1e365ea47 ""
   "natural_vs_non.png" 1770674966 441139 44f0983877564d4d7afb9b1e01237264 ""
-  "paper.aux" 1770674983 19949 15d0a522c41aa846ec4557f347c3b066 "pdflatex"
-  "paper.bbl" 1770674981 7502 29cb20342499d9c0d280adeb47e53ec2 "bibtex paper"
-  "paper.out" 1770674983 3496 0235a0b4734b0515ebe1c92bc78a26f7 "pdflatex"
-  "paper.tex" 1770674966 20521 71cf7c0b2abdc6406fccf6ea89692bb2 ""
+  "paper.aux" 1771197807 21187 b149ffbabe9243a3e7e753c196c035c9 "pdflatex"
+  "paper.bbl" 1771197804 7502 29cb20342499d9c0d280adeb47e53ec2 "bibtex paper"
+  "paper.out" 1771197807 3496 0235a0b4734b0515ebe1c92bc78a26f7 "pdflatex"
+  "paper.tex" 1771197796 21625 2032104c09b49f2efa002a436b9d73c3 ""
   "related-work.tex" 1770674966 10250 be546c89b31397870f36cdfbf3fd93ef ""
   "universal_heads.png" 1770674966 84087 c85a8eabf775cd0e296f5e28e9c63425 ""
   (generated)

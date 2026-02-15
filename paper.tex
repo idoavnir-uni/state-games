@@ -29,7 +29,7 @@
 % =============================================================================
 % Title and Authors
 % =============================================================================
-\title{Probing SSM States: The Query Bottleneck in Sub-quadratic Models}
+\title{Finite State, Forced Forgetting: Investigating the Memory Mechanism in Sub-quadratic Models}
 
 \author{
     Yuval Ran-Milo \\
@@ -211,7 +211,7 @@ We conduct all experiments using RWKV-7 1.5B, an SSM-based language model with 2
 \subsection{Validating the Probing Approach}
 \label{sec:probing_ablation}
 
-Before interpreting probe results, we verify that the probe architecture is meaningful. In \cref{sec:probe_not_strong}, we show that the probe is not overly powerful (it fails on most heads). In \cref{sec:natural_vs_nonnatural}, we demonstrate that the query direction matters, confirming the probe leverages the model's native memory mechanism.
+Before interpreting probe results, we first verify that the probe architecture is meaningful: it should only succeed when the target information is actually encoded in the state, rather than being powerful enough to extract arbitrary patterns.
 
 \subsubsection{The Probe is Not Overly Powerful}
 \label{sec:probe_not_strong}
@@ -246,9 +246,9 @@ This concentration of high-accuracy probes in a small subset of heads, rather th
 \subsubsection{Querying from the Right Outperforms Querying from the Left}
 \label{sec:natural_vs_nonnatural}
 
-We compare the \textit{natural probe} (querying from the right) against the \textit{non-natural probe} (querying from the left). \cref{fig:natural_vs_non} visualizes this comparison across the top 10 heads for each probe type. The results show a substantial gap: the best \textit{natural probe} reaches 96.3\%, while the best \textit{non-natural probe} achieves only 70.8\%.
+The \textit{natural probe} (querying from the right) significantly outperforms the \textit{non-natural probe} (querying from the left): the best \textit{natural probe} reaches 96.3\%, while the best \textit{non-natural probe} achieves only 70.8\%.
 
-This confirms that memory is encoded in a manner consistent with the model's native query mechanism (\cref{eq:state_query}). Probing from the right extracts information effectively; probing from the left does not.
+This gap confirms that memory is encoded in a manner consistent with the model's native query mechanism (\cref{eq:state_query}). Probing from the right extracts information effectively; probing from the left does not. \cref{fig:natural_vs_non} visualizes this comparison across the top 10 heads for each probe type.
 
 \begin{figure}[t]
 \centering
@@ -265,7 +265,7 @@ To verify that probe-identified heads play a causal role in storing memory, we p
 \begin{table}[t]
 \centering
 \small
-\caption{Counterfactual patching results (50 pairs, averaged over 5 seeds). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output.}
+\caption{Counterfactual patching results (50 pairs). ``Correct'': original property; ``Switched'': counterfactual property; ``Neither'': other output.}
 \label{tab:causal}
 \begin{tabular}{@{}lccc@{}}
 \toprule
@@ -273,13 +273,13 @@ Method & Correct & Switched & Neither \\
 \midrule
 Baseline & 90\% & 0\% & 10\% \\
 \textit{Natural} (top 0.5\%) & 14\% & 36\% & 50\% \\
-Random (0.5\%) & TBD\% & TBD\% & TBD\% \\
+\textit{Non-natural} (top 0.5\%) & 44\% & 4\% & 52\% \\
 All heads & 0\% & 76\% & 24\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Without patching (Baseline), the model outputs the correct property 90\% of the time. When we patch the top 0.5\% of heads selected by \textit{natural probe} accuracy, the model switches to the counterfactual property 36\% of the time. In contrast, patching the same number of randomly selected heads yields only a TBD\% switch rate (averaged over 5 seeds). Patching all heads provides an upper bound, achieving 76\% switch rate.
+Without patching (Baseline), the model outputs the correct property 90\% of the time. When we patch the top 0.5\% of heads selected by \textit{natural probe} accuracy, the model switches to the counterfactual property 36\% of the time. In contrast, patching the same number of heads selected by \textit{non-natural probe} accuracy yields only a 4\% switch rate. Patching all heads provides an upper bound, achieving 76\% switch rate. \TODO{add experiment with random head selection as additional baseline}
 
 \subsection{The Bottleneck is Querying, Not Storage}
 \label{sec:bottleneck}
@@ -307,7 +307,24 @@ We find substantial overlap: \textbf{7 of the top 10 heads are shared across bot
 \subsection{Semantic Collision Accelerates Forgetting}
 \label{sec:semantic_collision}
 
-We investigate how context affects memory retention by measuring probe accuracy as a function of token distance from the information. \TODO{add figures} We observe that \textbf{increased semantic similarity between the prompt content and the target subject accelerates the model's forgetting rate}. When subsequent sentences discuss similar entities, probe accuracy degrades faster than when the intervening content is semantically distinct.
+We investigate how context affects memory retention by measuring probe accuracy as a function of token distance from the information. We observe that \textbf{increased semantic similarity between the prompt content and the target subject accelerates the model's forgetting rate} as can be seen in \cref{fig:compare_accuracy_top_3,fig:compare_top_1}. 
+When subsequent sentences discuss similar entities, probe accuracy degrades faster than when the intervening content is semantically distinct.
+More specifically, we create two types of datasets: a homogeneous dataset containing only sentences of one type (e.g., "Lady Gaga's favorite animal is Fox"), 
+and a mixed dataset that combines sentences from two different domains (e.g., favorite animals and favorite colors) in a ratio where the target domain represents only a small fraction (roughly 1/30) of the total sentences.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{compare_standalone_vs_combined_accuracy_top_3.png}
+\caption{Top 3 accuracy of the homogeneous and mixed data probes on homogeneous and mixed data as a function of token distance from the binding pair we query.}
+\label{fig:compare_accuracy_top_3}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{compare_standalone_vs_combined_top_1.png}
+\caption{Top 1 accuracy of the homogeneous and mixed data probes on homogeneous and mixed data as a function of token distance from the binding pair we query.}
+\label{fig:compare_top_1}
+\end{figure}
 
 % =============================================================================
 % Future Work
@@ -315,17 +332,7 @@ We investigate how context affects memory retention by measuring probe accuracy 
 \section{Future Work}
 \label{sec:future_work}
 
-Our findings open several directions for future research.
-
-\textbf{Broader model coverage.} This work focuses exclusively on RWKV-7 (1.5B parameters). Testing whether our findings generalize to other SSM-based architectures (e.g., Mamba-2, GLA, DeltaNet) and different model scales would strengthen the conclusions and reveal whether the query bottleneck is a fundamental limitation of the SSM paradigm or specific to particular implementations.
-
-\textbf{More robust evaluation.} Our datasets are limited to entity-property binding with relatively simple structure. Extending to more diverse semantic relationships, longer contexts, and naturalistic text would test whether the memory mechanism we identified operates in realistic scenarios. Additionally, developing more sophisticated probing methods could provide finer-grained insights into what information is stored and how.
-
-\textbf{Understanding universal memory heads.} We identified heads that perform well across multiple semantic domains, but the mechanism underlying their universality remains unclear. Characterizing what makes these heads special could inform targeted architectural improvements or training objectives that enhance in-context memory.
-
-\textbf{Improving the query mechanism.} Given that the bottleneck appears to be querying rather than storage, designing better query mechanisms is a natural next step. This could involve architectural modifications, training interventions, or post-hoc methods to improve how models retrieve information from their internal states.
-
-\textbf{Semantic collision dynamics.} While we observed that semantic similarity accelerates forgetting, a deeper investigation into the mechanisms and potential mitigations would be valuable for understanding the limits of in-context memory.
+Our findings open several directions for future research: (i) \textbf{Characterizing Universal Memory Heads}: what makes these heads special, and could understanding their mechanism inform architectural improvements? (ii) \textbf{Improving State Querying}: given that the bottleneck appears to be querying rather than storage, can we design better query mechanisms? (iii) \textbf{Scaling Analysis}: do these patterns hold in larger models?
 
 % =============================================================================
 % Conclusion
