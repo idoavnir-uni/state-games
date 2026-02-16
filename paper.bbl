@@ -1,9 +1,14 @@
-\begin{thebibliography}{24}
+\begin{thebibliography}{29}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{Belrose et~al.(2025)Belrose, Ostrovsky, McKinney, Furman, Smith, Halawi, Biderman, and Steinhardt}]{belrose2023tunedlens}
 Nora Belrose, Igor Ostrovsky, Lev McKinney, Zach Furman, Logan Smith, Danny Halawi, Stella Biderman, and Jacob Steinhardt. 2025.
 \newblock \href {http://arxiv.org/abs/2303.08112} {Eliciting latent predictions from transformers with the tuned lens}.
+
+\bibitem[{Brown et~al.(2020)Brown, Mann, Ryder, Subbiah, Kaplan, Dhariwal, Neelakantan, Shyam, Sastry, Askell, Agarwal, Herbert-Voss, Krueger, Henighan, Child, Ramesh, Ziegler, Wu, Winter, Hesse, Chen, Sigler, Litwin, Gray, Chess, Clark, Berner, McCandlish, Radford, Sutskever, and Amodei}]{brown2020fewshot}
+Tom~B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel~M. Ziegler, Jeffrey Wu, Clemens Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. 2020.
+\newblock \href {http://arxiv.org/abs/2005.14165} {Language models are few-shot learners}.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
 
 \bibitem[{Dai et~al.(2024)Dai, Heinzerling, and Inui}]{dai2024bindinganalysis}
 Qin Dai, Benjamin Heinzerling, and Kentaro Inui. 2024.
@@ -29,6 +34,11 @@ Jiahai Feng and Jacob Steinhardt. 2024.
 Daniel~Y. Fu, Tri Dao, Khaled~K. Saab, Armin~W. Thomas, Atri Rudra, and Christopher Ré. 2023.
 \newblock \href {http://arxiv.org/abs/2212.14052} {Hungry hungry hippos: Towards language modeling with state space models}.
 
+\bibitem[{Geva et~al.(2023)Geva, Bastings, Filippova, and Globerson}]{geva2023dissecting}
+Mor Geva, Jasmijn Bastings, Katja Filippova, and Amir Globerson. 2023.
+\newblock \href {http://arxiv.org/abs/2304.14767} {Dissecting recall of factual associations in auto-regressive language models}.
+\newblock In \emph{Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing}.
+
 \bibitem[{Grazzi et~al.(2025)Grazzi, Siems, Zela, Franke, Hutter, and Pontil}]{grazzi2024statetracking}
 Riccardo Grazzi, Julien Siems, Arber Zela, Jörg K.~H. Franke, Frank Hutter, and Massimiliano Pontil. 2025.
 \newblock \href {http://arxiv.org/abs/2411.12537} {Unlocking state-tracking in linear rnns through negative eigenvalues}.
@@ -48,6 +58,15 @@ Albert Gu, Ankit Gupta, Karan Goel, and Christopher Ré. 2022{\natexlab{b}}.
 \bibitem[{Gupta et~al.(2022)Gupta, Gu, and Berant}]{gupta2022dss}
 Ankit Gupta, Albert Gu, and Jonathan Berant. 2022.
 \newblock \href {http://arxiv.org/abs/2203.14343} {Diagonal state spaces are as effective as structured state spaces}.
+
+\bibitem[{Gur-Arieh et~al.(2025)Gur-Arieh, Geva, and Geiger}]{gurarieh2025mixing}
+Yoav Gur-Arieh, Mor Geva, and Atticus Geiger. 2025.
+\newblock \href {http://arxiv.org/abs/2510.06182} {Mixing mechanisms: How language models retrieve bound entities in-context}.
+
+\bibitem[{Jelassi et~al.(2024)Jelassi, Brandfonbrener, Kakade, and Malach}]{jelassi2024repeat}
+Samy Jelassi, David Brandfonbrener, Sham~M. Kakade, and Eran Malach. 2024.
+\newblock \href {http://arxiv.org/abs/2402.01032} {Repeat after me: Transformers are better than state space models at copying}.
+\newblock In \emph{Proceedings of the 41st International Conference on Machine Learning}.
 
 \bibitem[{Kim and Schuster(2023)}]{kim2023entitytracking}
 Najoung Kim and Sebastian Schuster. 2023.
@@ -76,6 +95,10 @@ Julien Siems, Timur Carstensen, Arber Zela, Frank Hutter, Massimiliano Pontil, a
 \bibitem[{Smith et~al.(2023)Smith, Warrington, and Linderman}]{smith2022s5}
 Jimmy T.~H. Smith, Andrew Warrington, and Scott~W. Linderman. 2023.
 \newblock \href {http://arxiv.org/abs/2208.04933} {Simplified state space layers for sequence modeling}.
+
+\bibitem[{Vaswani et~al.(2023)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin}]{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N. Gomez, Lukasz Kaiser, and Illia Polosukhin. 2023.
+\newblock \href {http://arxiv.org/abs/1706.03762} {Attention is all you need}.
 
 \bibitem[{Wu et~al.(2025)Wu, Geiger, and Millière}]{wu2025variablebinding}
 Yiwei Wu, Atticus Geiger, and Raphaël Millière. 2025.

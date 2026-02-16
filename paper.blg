@@ -15,6 +15,7 @@ Warning--empty journal in fu2022h3
 Warning--empty journal in grazzi2024statetracking
 Warning--empty journal in gu2023mamba
 Warning--empty journal in gu2022s4dparam
+Warning--empty journal in gurarieh2025mixing
 Warning--empty booktitle in kim2023entitytracking
 Warning--empty journal in peng2023rwkv
 Warning--empty journal in peng2025rwkv7
@@ -25,45 +26,45 @@ Warning--empty booktitle in wu2025variablebinding
 Warning--empty journal in yang2024gateddeltanet
 Warning--empty journal in yang2023gla
 Warning--empty journal in yang2024deltanet
-You've used 24 entries,
+You've used 29 entries,
             3571 wiz_defined-function locations,
-            817 strings with 10789 characters,
-and the built_in function-call counts, 18474 in all, are:
-= -- 1281
-> -- 1438
+            846 strings with 12475 characters,
+and the built_in function-call counts, 23578 in all, are:
+= -- 1604
+> -- 1914
 < -- 9
-+ -- 463
-- -- 435
-* -- 1482
-:= -- 2968
-add.period$ -- 72
-call.type$ -- 24
-change.case$ -- 264
-chr.to.int$ -- 26
-cite$ -- 41
-duplicate$ -- 1152
-empty$ -- 1062
-format.name$ -- 517
-if$ -- 3815
++ -- 618
+- -- 585
+* -- 1913
+:= -- 3772
+add.period$ -- 90
+call.type$ -- 29
+change.case$ -- 345
+chr.to.int$ -- 31
+cite$ -- 47
+duplicate$ -- 1471
+empty$ -- 1328
+format.name$ -- 682
+if$ -- 4850
 int.to.chr$ -- 3
 int.to.str$ -- 1
-missing$ -- 257
-newline$ -- 100
-num.names$ -- 96
-pop$ -- 677
+missing$ -- 336
+newline$ -- 123
+num.names$ -- 116
+pop$ -- 871
 preamble$ -- 1
-purify$ -- 240
+purify$ -- 310
 quote$ -- 0
-skip$ -- 698
+skip$ -- 841
 stack$ -- 0
-substring$ -- 270
-swap$ -- 534
+substring$ -- 325
+swap$ -- 698
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 216
-warning$ -- 17
-while$ -- 72
+type$ -- 261
+warning$ -- 18
+while$ -- 87
 width$ -- 0
-write$ -- 243
-(There were 17 warnings)
+write$ -- 299
+(There were 18 warnings)
