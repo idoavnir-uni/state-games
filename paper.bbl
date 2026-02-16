@@ -1,9 +1,14 @@
-\begin{thebibliography}{28}
+\begin{thebibliography}{29}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{Belrose et~al.(2025)Belrose, Ostrovsky, McKinney, Furman, Smith, Halawi, Biderman, and Steinhardt}]{belrose2023tunedlens}
 Nora Belrose, Igor Ostrovsky, Lev McKinney, Zach Furman, Logan Smith, Danny Halawi, Stella Biderman, and Jacob Steinhardt. 2025.
 \newblock \href {http://arxiv.org/abs/2303.08112} {Eliciting latent predictions from transformers with the tuned lens}.
+
+\bibitem[{Brown et~al.(2020)Brown, Mann, Ryder, Subbiah, Kaplan, Dhariwal, Neelakantan, Shyam, Sastry, Askell, Agarwal, Herbert-Voss, Krueger, Henighan, Child, Ramesh, Ziegler, Wu, Winter, Hesse, Chen, Sigler, Litwin, Gray, Chess, Clark, Berner, McCandlish, Radford, Sutskever, and Amodei}]{brown2020fewshot}
+Tom~B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel~M. Ziegler, Jeffrey Wu, Clemens Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. 2020.
+\newblock \href {http://arxiv.org/abs/2005.14165} {Language models are few-shot learners}.
+\newblock In \emph{Advances in Neural Information Processing Systems}.
 
 \bibitem[{Dai et~al.(2024)Dai, Heinzerling, and Inui}]{dai2024bindinganalysis}
 Qin Dai, Benjamin Heinzerling, and Kentaro Inui. 2024.

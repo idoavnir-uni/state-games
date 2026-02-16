@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex paper"] 1771218069.09652 "paper.aux" "paper.bbl" "paper" 1771218070.20675 0
+["bibtex paper"] 1771218648.26827 "paper.aux" "paper.bbl" "paper" 1771218649.3781 0
   "./acl_natbib.bst" 1769946150.1923 47709 d9d0ab22329e3318a3d1b2ae6abaab62 ""
-  "./custom.bib" 1771217268.78435 19056 001aef900ef15221ecf30f8336ae29aa ""
-  "paper.aux" 1771218070.13052 25773 fea3587a5ec42f190e0c94e9feddec0c "pdflatex"
+  "./custom.bib" 1771218641.14659 19914 ab344c3dd797428388d43da6fced133b ""
+  "paper.aux" 1771218649.30094 26276 79d1326c1491922aa02c38116bc1cefc "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1771218069.11524 "/Users/idoavnir/Desktop/state-games/paper.tex" "paper.pdf" "paper" 1771218070.20692 0
-  "/Users/idoavnir/Desktop/state-games/paper.tex" 1771218066.34044 30699 2779a43095f4a2f931a6c7594a7c60bf ""
+["pdflatex"] 1771218648.28566 "/Users/idoavnir/Desktop/state-games/paper.tex" "paper.pdf" "paper" 1771218649.37825 0
+  "/Users/idoavnir/Desktop/state-games/paper.tex" 1771218645.81751 30723 5a1615bf79d42789ac4d24eb034aa649 ""
   "/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025basic/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "/usr/local/texlive/2025basic/texmf-dist/fonts/tfm/adobe/helvetic/phvb.tfm" 1136768653 2300 14616918391efa49ac8b481a75fbdc1a ""
@@ -159,10 +159,10 @@
   "compare_standalone_vs_combined_accuracy_top_3.png" 1771212355.69086 158591 37fab8ef51a9c85429d4b3547ec96586 ""
   "compare_standalone_vs_combined_top_1.png" 1771212355.69159 156238 0c10935ffb2e6ed900f0c484a85ee052 ""
   "natural_vs_non.png" 1770115917.23547 441139 fa4d54fd2215dcd393dfd9fb2d32ca04 ""
-  "paper.aux" 1771218070.13052 25773 fea3587a5ec42f190e0c94e9feddec0c "pdflatex"
-  "paper.bbl" 1771218069.11265 8894 dcd543432f4ef8e01bc2f287fae53d01 "bibtex paper"
-  "paper.out" 1771218070.13192 3758 e9ddb2799110bbc3b5ddc8878ee27add "pdflatex"
-  "paper.tex" 1771218066.34044 30699 2779a43095f4a2f931a6c7594a7c60bf ""
+  "paper.aux" 1771218649.30094 26276 79d1326c1491922aa02c38116bc1cefc "pdflatex"
+  "paper.bbl" 1771218648.28342 9855 ccfd292e522ec194d11cc5af48e6baa0 "bibtex paper"
+  "paper.out" 1771218649.30236 3758 e9ddb2799110bbc3b5ddc8878ee27add "pdflatex"
+  "paper.tex" 1771218645.81751 30723 5a1615bf79d42789ac4d24eb034aa649 ""
   "related-work.tex" 1771217371.39277 10462 9b2d111f1efe78570d41818cfec6b321 ""
   "universal_heads.png" 1770116546.68501 84087 d0862bb7267d84a145e6552900a2b85b ""
   (generated)
