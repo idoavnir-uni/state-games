@@ -59,9 +59,9 @@ Sub-quadratic models such as Mamba and RWKV compress all past context into a fix
 \section{Introduction}
 \label{sec:introduction}
 
-Transformer-based language models have achieved remarkable success across a wide range of tasks, but their self-attention mechanism scales quadratically with sequence length, making long-context inference expensive \cite{vaswani2017attention}. This has motivated a growing family of sub-quadratic architectures, including state space models (SSMs) such as Mamba \cite{gu2023mamba}, RWKV \cite{peng2023rwkv}, and GLA \cite{yang2023gla}, which achieve linear-time inference by compressing all past context into a fixed-size recurrent state. These models have become competitive with transformers at similar scales, yet a fundamental tension remains: the state has finite capacity, so it cannot preserve all information from an arbitrarily long context. Something must be forgotten.
+Transformer-based language models have achieved remarkable success across a wide range of tasks, but their self-attention mechanism scales quadratically with sequence length, making long-context inference expensive \cite{vaswani2017attention}. This has motivated a growing family of sub-quadratic architectures, including state space models (SSMs) such as Mamba \cite{gu2023mamba}, RWKV \cite{peng2023rwkv}, and GLA \cite{yang2023gla}, which achieve linear-time inference by compressing all past context into a fixed-size recurrent state. These models have become competitive with transformers at similar scales \cite{gu2023mamba,peng2025rwkv7}, yet a fundamental tension remains: the state has finite capacity, so it cannot preserve all information from an arbitrarily long context. Something must be forgotten.
 
-This raises a natural question: when information is provided entirely in context, how much of it actually ends up in the state, and how well can the model retrieve it? Moreover, beyond performance, how does this process work mechanistically: where in the model is memory stored, how is it organized, and what determines whether a piece of information can be recovered? Prior work has studied the recall and state-tracking abilities of SSMs through behavioral benchmarks, but relatively little is known about what is happening inside the state itself. Is poor recall due to information never being stored, or due to the model failing to extract what is already there?
+This raises a natural question: when information is provided entirely in context, how much of it actually ends up in the state, and how well can the model retrieve it? Moreover, beyond performance, how does this process work mechanistically: where in the model is memory stored, how is it organized, and what determines whether a piece of information can be recovered? Prior work has studied the recall and state-tracking abilities of SSMs through behavioral benchmarks \cite{jelassi2024repeat,fu2022h3,grazzi2024statetracking}, but relatively little is known about what is happening inside the state itself. Is poor recall due to information never being stored, or due to the model failing to extract what is already there?
 
 We address this question by probing the internal states of RWKV-7 1.5B on controlled entity-binding tasks, where each input prompt contains a set of entity-property associations (e.g., ``Lady Gaga's favorite color is red'') that vary randomly across samples. Thanks to the fact that these associations are never seen during pretraining, any successful retrieval must rely on in-context memory. We design probes that respect the architecture's native query mechanism: SSMs produce outputs by right-multiplying the state with a query vector, so we train probes that query the state in the same way. To validate that the heads identified by probing are genuinely involved in memory, we complement our probing analysis with counterfactual patching experiments that test for causal influence on the model's outputs.
 
@@ -98,7 +98,7 @@ This raises a fundamental question: given the finite capacity of the state, \emp
 
 To illustrate the generality of this framework, we show how two popular architectures fit the SSM formulation.
 
-\paragraph{Gated Linear Attention (GLA).}
+\paragraph{Gated Linear Attention \cite{yang2023gla}.}
 In GLA, the state update and query take the form:
 \begin{equation}
     S_t = S_{t-1} \odot (1 \alpha_t^\top) + v_t k_t^\top, \; o_t = S_t \, q_t,
@@ -106,7 +106,7 @@ In GLA, the state update and query take the form:
 \end{equation}
 where $\odot$ denotes element-wise multiplication, and $\alpha_t, v_t, k_t, q_t \in \mathbb{R}^{d}$ are learned projections of the input.
 
-\paragraph{Mamba-2.}
+\paragraph{Mamba-2 \cite{dao2024ssmduality}.}
 In Mamba-2, the formulation is:
 \begin{equation}
     S_t = \gamma_t S_{t-1} + v_t k_t^\top, \; o_t = S_t \, q_t,
@@ -308,7 +308,7 @@ A key observation emerges from comparing probe performance to model performance.
 
 When we prompt the model using the template in \cref{fig:prompt_template}, its accuracy is far below probe accuracy. This gap implies that the information \emph{is stored} in the state (the probe finds it) but the model struggles to \emph{query} it effectively during generation.
 
-This finding challenges the common assumption that SSMs' limitations stem from insufficient memory capacity. Instead, our results suggest that the bottleneck lies in the model's ability to formulate effective queries.
+This finding challenges the common assumption that SSMs' limitations stem from insufficient memory capacity \cite{jelassi2024repeat,yang2024deltanet,grazzi2024statetracking}. Instead, our results suggest that the bottleneck lies in the model's ability to formulate effective queries.
 
 \subsection{Universal Memory Heads}
 \label{sec:universal_heads}

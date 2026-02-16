@@ -121,6 +121,7 @@ Complementary mechanistic work on synthetic \emph{variable} binding further
 supports the view that binding can be mediated by sparse, specialized circuits
 that are discoverable via automated causal localization and patching
 \cite{davies2023desiderata,wu2025variablebinding}.
+Concurrent work further decomposes the retrieval process, showing that models combine positional, lexical, and reflexive mechanisms to retrieve bound entities \cite{gurarieh2025mixing}.
 Our entity-binding datasets follow this controlled regime, but we target
 sub-quadratic recurrent-state models where bindings must be retained in a
 compressed state; this shifts the emphasis from \emph{whether the model attends
@@ -139,7 +140,7 @@ across depth \cite{belrose2023tunedlens}. Beyond correlational probes, causal
 interventions are commonly used to establish necessity and sufficiency of
 components. Meng et al.\ develop causal tracing interventions to localize
 computations supporting factual recall and show that specific mechanisms can be
-edited (ROME) \cite{meng2022rome}. Activation patching has become a standard causal tool for circuit-level analysis, and
+edited (ROME) \cite{meng2022rome}. Geva et al.\ further dissect the multi-step process by which auto-regressive models aggregate subject and relation information to predict attributes \cite{geva2023dissecting}. Activation patching has become a standard causal tool for circuit-level analysis, and
 recent work systematizes methodological choices and metrics for patching-based
 localization \cite{zhang2023patching}. Broader frameworks for circuit-based
 reasoning about Transformers provide a language for decomposing computations
