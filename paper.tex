@@ -59,7 +59,7 @@ Sub-quadratic models such as Mamba and RWKV compress all past context into a fix
 \section{Introduction}
 \label{sec:introduction}
 
-Transformer-based language models have achieved remarkable success across a wide range of tasks, but their self-attention mechanism scales quadratically with sequence length, making long-context inference expensive \tocite. This has motivated a growing family of sub-quadratic architectures, including state space models (SSMs) such as Mamba \tocite, RWKV \tocite, and GLA \tocite, which achieve linear-time inference by compressing all past context into a fixed-size recurrent state. These models have become competitive with transformers at similar scales, yet a fundamental tension remains: the state has finite capacity, so it cannot preserve all information from an arbitrarily long context. Something must be forgotten.
+Transformer-based language models have achieved remarkable success across a wide range of tasks, but their self-attention mechanism scales quadratically with sequence length, making long-context inference expensive \cite{vaswani2017attention}. This has motivated a growing family of sub-quadratic architectures, including state space models (SSMs) such as Mamba \cite{gu2023mamba}, RWKV \cite{peng2023rwkv}, and GLA \cite{yang2023gla}, which achieve linear-time inference by compressing all past context into a fixed-size recurrent state. These models have become competitive with transformers at similar scales, yet a fundamental tension remains: the state has finite capacity, so it cannot preserve all information from an arbitrarily long context. Something must be forgotten.
 
 This raises a natural question: when information is provided entirely in context, how much of it actually ends up in the state, and how well can the model retrieve it? Moreover, beyond performance, how does this process work mechanistically: where in the model is memory stored, how is it organized, and what determines whether a piece of information can be recovered? Prior work has studied the recall and state-tracking abilities of SSMs through behavioral benchmarks, but relatively little is known about what is happening inside the state itself. Is poor recall due to information never being stored, or due to the model failing to extract what is already there?
 
@@ -80,7 +80,7 @@ Our main findings are as follows. First, probing reveals that entity-property bi
 \section{State Space Models}
 \label{sec:ssm}
 
-Many state-of-the-art sub-quadratic architectures, including Mamba \tocite, RWKV \tocite, GLA \tocite, and Deltanet \tocite, can be unified under the framework of \emph{state space models} (SSMs); see \cref{sec:ssm_examples} for concrete examples. Despite their architectural differences, all of these models can be written in the following generic form.
+Many state-of-the-art sub-quadratic architectures, including Mamba \cite{gu2023mamba}, RWKV \cite{peng2023rwkv}, GLA \cite{yang2023gla}, and Deltanet \cite{yang2024deltanet}, can be unified under the framework of \emph{state space models} (SSMs); see \cref{sec:ssm_examples} for concrete examples. Despite their architectural differences, all of these models can be written in the following generic form.
 
 The model maintains an internal state $S_t \in \mathbb{R}^{d \times d}$ that is updated at each time step based on the previous state and the current input $x_t \in \mathbb{R}^{d}$:
 \begin{align}
@@ -244,7 +244,7 @@ We compare several head selection strategies: a baseline with no heads patched, 
     \end{tabular}
     \end{table}
 
-We conduct all experiments using RWKV-7 1.5B, an SSM-based language model with 24 layers and 32 heads per layer (768 total heads), achieving state-of-the-art performance at its scale \tocite.
+We conduct all experiments using RWKV-7 1.5B, an SSM-based language model with 24 layers and 32 heads per layer (768 total heads), achieving state-of-the-art performance at its scale \cite{peng2025rwkv7}.
 
 We begin by validating our probing methodology, showing that the probe is not overly powerful and that the querying direction matters (\cref{sec:probing_ablation}). We then use counterfactual patching to demonstrate that the heads identified by probing have a causal influence on model outputs (\cref{sec:causal_results}). Comparing probe accuracy to the model's own retrieval performance reveals that the main bottleneck lies in querying the state rather than in storing information (\cref{sec:bottleneck}). We further show that the same small set of heads is important across semantically distinct domains (\cref{sec:universal_heads}), and that semantically similar context accelerates forgetting (\cref{sec:semantic_collision}).
 
