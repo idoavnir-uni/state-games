@@ -1,14 +1,14 @@
 # Fdb version 4
-["bibtex paper"] 1771252013.44628 "paper.aux" "paper.bbl" "paper" 1771252015.03916 0
+["bibtex paper"] 1771253224.03187 "paper.aux" "paper.bbl" "paper" 1771253225.60261 0
   "./acl_natbib.bst" 1770028868.40404 47709 d9d0ab22329e3318a3d1b2ae6abaab62 ""
   "./custom.bib" 1771251879.73235 19914 ab344c3dd797428388d43da6fced133b ""
-  "paper.aux" 1771252014.79798 26127 6d288bedcca91294a41f823e5ce17b37 "pdflatex"
+  "paper.aux" 1771253225.35839 26154 ac49d22ebc398e3cccb7514af48ce430 "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1771252013.54215 "/Users/shaharmendel/state-games/paper.tex" "paper.pdf" "paper" 1771252015.03933 0
-  "/Users/shaharmendel/state-games/paper.tex" 1771252011.6739 30685 badfa56ca78dd46a5325444755fe82d1 ""
+["pdflatex"] 1771253224.13143 "/Users/shaharmendel/state-games/paper.tex" "paper.pdf" "paper" 1771253225.60282 0
+  "/Users/shaharmendel/state-games/paper.tex" 1771253222.06174 30708 53b68a6356e71aac270affc0168bb0aa ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/inconsolata/i4-t1-0.enc" 1558214095 7631 5169ff1acd97ff1c4ab83563c99f96f4 ""
   "/usr/local/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
@@ -160,10 +160,10 @@
   "compare_standalone_vs_combined_accuracy_top_3.png" 1771159670.22845 158591 37fab8ef51a9c85429d4b3547ec96586 ""
   "compare_standalone_vs_combined_top_1.png" 1771159665.78463 156238 0c10935ffb2e6ed900f0c484a85ee052 ""
   "natural_vs_non.png" 1770464563.89834 441139 fa4d54fd2215dcd393dfd9fb2d32ca04 ""
-  "paper.aux" 1771252014.79798 26127 6d288bedcca91294a41f823e5ce17b37 "pdflatex"
-  "paper.bbl" 1771252013.53935 9855 ccfd292e522ec194d11cc5af48e6baa0 "bibtex paper"
-  "paper.out" 1771252014.79941 3758 e9ddb2799110bbc3b5ddc8878ee27add "pdflatex"
-  "paper.tex" 1771252011.6739 30685 badfa56ca78dd46a5325444755fe82d1 ""
+  "paper.aux" 1771253225.35839 26154 ac49d22ebc398e3cccb7514af48ce430 "pdflatex"
+  "paper.bbl" 1771253224.12906 9855 ccfd292e522ec194d11cc5af48e6baa0 "bibtex paper"
+  "paper.out" 1771253225.35984 3758 e9ddb2799110bbc3b5ddc8878ee27add "pdflatex"
+  "paper.tex" 1771253222.06174 30708 53b68a6356e71aac270affc0168bb0aa ""
   "related-work.tex" 1771251879.73785 10462 9b2d111f1efe78570d41818cfec6b321 ""
   "universal_heads.png" 1770464563.90683 84087 d0862bb7267d84a145e6552900a2b85b ""
   (generated)

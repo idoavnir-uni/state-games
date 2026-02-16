@@ -125,7 +125,7 @@ Both architectures share the key property that the output is produced by queryin
 \subsection{Entity-Binding Datasets}
 \label{sec:datasets}
 
-We construct \emph{in-context} entity-binding datasets to study how SSMs store and retrieve factual associations. Each dataset follows a generic structure: samples consist of $N_e$ statements of the form ``\texttt{<entity> <relation> <property>}'', where each entity is associated with one of $C$ possible property values.
+We construct \emph{in-context} entity-binding datasets \cite{feng2024binding} to study how SSMs store and retrieve factual associations. Each dataset follows a generic structure: samples consist of $N_e$ statements of the form ``\texttt{<entity> <relation> <property>}'', where each entity is associated with one of $C$ possible property values.
 
 These associations are provided entirely within the input prompt (not learned during pretraining) and vary randomly across samples. One designated \emph{target entity} appears in all samples, but its associated property changes. The order of entities is randomized, and the target entity appears at a random position. This ensures that any successful retrieval must rely on in-context memory rather than memorized facts. We generate 10{,}000 prompts per dataset for probing experiments and 50 sample pairs for counterfactual patching. See \cref{fig:dataset_examples} for examples.
 
