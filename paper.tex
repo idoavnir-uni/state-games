@@ -98,7 +98,7 @@ This raises a fundamental question: given the finite capacity of the state, \emp
 
 To illustrate the generality of this framework, we show how two popular architectures fit the SSM formulation.
 
-\paragraph{Gated Linear Attention \cite{yang2023gla}.}
+\paragraph{Gated Linear Attention (GLA)).}
 In GLA, the state update and query take the form:
 \begin{equation}
     S_t = S_{t-1} \odot (1 \alpha_t^\top) + v_t k_t^\top, \; o_t = S_t \, q_t,
@@ -106,7 +106,7 @@ In GLA, the state update and query take the form:
 \end{equation}
 where $\odot$ denotes element-wise multiplication, and $\alpha_t, v_t, k_t, q_t \in \mathbb{R}^{d}$ are learned projections of the input.
 
-\paragraph{Mamba-2 \cite{dao2024ssmduality}.}
+\paragraph{Mamba-2.}
 In Mamba-2, the formulation is:
 \begin{equation}
     S_t = \gamma_t S_{t-1} + v_t k_t^\top, \; o_t = S_t \, q_t,
