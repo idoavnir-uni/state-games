@@ -99,7 +99,7 @@ This raises a fundamental question: given the finite capacity of the state, \emp
 To illustrate the generality of this framework, we show how two popular architectures fit the SSM formulation.
 
 \paragraph{Gated Linear Attention (GLA).}
-In GLA, the state update and query take the form:
+In GLA \cite{yang2023gla}, the state update and query take the form:
 \begin{equation}
     S_t = S_{t-1} \odot (1 \alpha_t^\top) + v_t k_t^\top, \; o_t = S_t \, q_t,
     \label{eq:gla}
@@ -107,7 +107,7 @@ In GLA, the state update and query take the form:
 where $\odot$ denotes element-wise multiplication, and $\alpha_t, v_t, k_t, q_t \in \mathbb{R}^{d}$ are learned projections of the input.
 
 \paragraph{Mamba-2.}
-In Mamba-2, the formulation is:
+In Mamba-2 \cite{dao2024ssmduality}, the formulation is:
 \begin{equation}
     S_t = \gamma_t S_{t-1} + v_t k_t^\top, \; o_t = S_t \, q_t,
     \label{eq:mamba}
@@ -209,7 +209,7 @@ We measure top-1 accuracy: the model must generate the correct property label as
 \subsection{Causal Intervention}
 \label{sec:causal}
 
-To establish that the heads identified by probing have a \emph{causal} effect on model behavior, we perform counterfactual patching experiments using the prompt structure from \cref{sec:model_retrieval}.
+To establish that the heads identified by probing have a \emph{causal} effect on model behavior, we perform counterfactual patching experiments \cite{zhang2023patching} using the prompt structure from \cref{sec:model_retrieval}.
 
 The procedure is as follows: (i) generate two prompts $A$ and $B$ that differ only in the target entity's property (e.g., ``Lady Gaga's favorite color is red'' vs. ``Lady Gaga's favorite color is blue''); (ii) run both prompts through the model, collecting states after processing the context; (iii) for prompt $A$, replace the states of a \emph{subset} of heads with the corresponding states from prompt $B$; and (iv) continue generation and measure whether the output switches from property $A$ to property $B$.
 
