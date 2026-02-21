@@ -1,4 +1,4 @@
-\begin{thebibliography}{29}
+\begin{thebibliography}{34}
 \expandafter\ifx\csname natexlab\endcsname\relax\def\natexlab#1{#1}\fi
 
 \bibitem[{Belrose et~al.(2025)Belrose, Ostrovsky, McKinney, Furman, Smith, Halawi, Biderman, and Steinhardt}]{belrose2023tunedlens}
@@ -9,6 +9,11 @@ Nora Belrose, Igor Ostrovsky, Lev McKinney, Zach Furman, Logan Smith, Danny Hala
 Tom~B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel~M. Ziegler, Jeffrey Wu, Clemens Winter, Christopher Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. 2020.
 \newblock \href {http://arxiv.org/abs/2005.14165} {Language models are few-shot learners}.
 \newblock In \emph{Advances in Neural Information Processing Systems}.
+
+\bibitem[{Chen et~al.(2024)Chen, Vondrick, and Mao}]{chen2024selfie}
+Haozhe Chen, Carl Vondrick, and Chengzhi Mao. 2024.
+\newblock \href {http://arxiv.org/abs/2403.10949} {{SelfIE}: Self-interpretation of large language model embeddings}.
+\newblock In \emph{International Conference on Machine Learning}.
 
 \bibitem[{Dai et~al.(2024)Dai, Heinzerling, and Inui}]{dai2024bindinganalysis}
 Qin Dai, Benjamin Heinzerling, and Kentaro Inui. 2024.
@@ -26,6 +31,11 @@ Xander Davies, Max Nadeau, Nikhil Prakash, Tamar~Rott Shaham, and David Bau. 202
 Nelson Elhage, Neel Nanda, Catherine Olsson, Tom Henighan, Nicholas Joseph, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen, Tom Conerly, et~al. 2021.
 \newblock A mathematical framework for transformer circuits.
 
+\bibitem[{Engels et~al.(2024)Engels, Liao, Michaud, Gurnee, and Tegmark}]{engels2024notall}
+Joshua Engels, Isaac Liao, Eric~J. Michaud, Wes Gurnee, and Max Tegmark. 2024.
+\newblock \href {http://arxiv.org/abs/2405.14860} {Not all language model features are linear}.
+\newblock In \emph{International Conference on Machine Learning}.
+
 \bibitem[{Feng and Steinhardt(2024)}]{feng2024binding}
 Jiahai Feng and Jacob Steinhardt. 2024.
 \newblock \href {http://arxiv.org/abs/2310.17191} {How do language models bind entities in context?}
@@ -38,6 +48,11 @@ Daniel~Y. Fu, Tri Dao, Khaled~K. Saab, Armin~W. Thomas, Atri Rudra, and Christop
 Mor Geva, Jasmijn Bastings, Katja Filippova, and Amir Globerson. 2023.
 \newblock \href {http://arxiv.org/abs/2304.14767} {Dissecting recall of factual associations in auto-regressive language models}.
 \newblock In \emph{Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing}.
+
+\bibitem[{Ghandeharioun et~al.(2024)Ghandeharioun, Caciularu, Pearce, Dixon, and Geva}]{ghandeharioun2024patchscopes}
+Asma Ghandeharioun, Avi Caciularu, Adam Pearce, Lucas Dixon, and Mor Geva. 2024.
+\newblock \href {http://arxiv.org/abs/2401.06102} {Patchscopes: A unifying framework for inspecting hidden representations of language models}.
+\newblock In \emph{International Conference on Machine Learning}.
 
 \bibitem[{Grazzi et~al.(2025)Grazzi, Siems, Zela, Franke, Hutter, and Pontil}]{grazzi2024statetracking}
 Riccardo Grazzi, Julien Siems, Arber Zela, Jörg K.~H. Franke, Frank Hutter, and Massimiliano Pontil. 2025.
@@ -62,6 +77,16 @@ Ankit Gupta, Albert Gu, and Jonathan Berant. 2022.
 \bibitem[{Gur-Arieh et~al.(2025)Gur-Arieh, Geva, and Geiger}]{gurarieh2025mixing}
 Yoav Gur-Arieh, Mor Geva, and Atticus Geiger. 2025.
 \newblock \href {http://arxiv.org/abs/2510.06182} {Mixing mechanisms: How language models retrieve bound entities in-context}.
+
+\bibitem[{Gurnee and Tegmark(2024)}]{gurnee2024language}
+Wes Gurnee and Max Tegmark. 2024.
+\newblock \href {http://arxiv.org/abs/2310.02207} {Language models represent space and time}.
+\newblock In \emph{International Conference on Learning Representations}.
+
+\bibitem[{Hewitt and Manning(2019)}]{hewitt2019structural}
+John Hewitt and Christopher~D. Manning. 2019.
+\newblock \href {https://aclanthology.org/N19-1419/} {A structural probe for finding syntax in word representations}.
+\newblock In \emph{Proceedings of the 2019 Conference of the North {A}merican Chapter of the Association for Computational Linguistics}.
 
 \bibitem[{Jelassi et~al.(2024)Jelassi, Brandfonbrener, Kakade, and Malach}]{jelassi2024repeat}
 Samy Jelassi, David Brandfonbrener, Sham~M. Kakade, and Eran Malach. 2024.

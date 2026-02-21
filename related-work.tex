@@ -134,9 +134,12 @@ model’s query mechanism is able to retrieves them}.
 Our work sits within mechanistic interpretability, which aims to localize and
 characterize internal computations responsible for model behavior. Probing
 methods train auxiliary predictors to decode information from hidden
-activations; recent 'lens' techniques decode intermediate representations into
+activations \cite{hewitt2019structural,gurnee2024language,engels2024notall}; recent 'lens' techniques decode intermediate representations into
 output distributions, providing a token-level view of how predictions evolve
-across depth \cite{belrose2023tunedlens}. Beyond correlational probes, causal
+across depth \cite{belrose2023tunedlens}. Patchscopes unifies several such
+inspection methods by patching source representations into a target prompt
+designed to elicit their content, effectively using the model itself as a probe
+\cite{ghandeharioun2024patchscopes,chen2024selfie}. Beyond correlational probes, causal
 interventions are commonly used to establish necessity and sufficiency of
 components. Meng et al.\ develop causal tracing interventions to localize
 computations supporting factual recall and show that specific mechanisms can be
