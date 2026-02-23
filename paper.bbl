@@ -97,9 +97,10 @@ Samy Jelassi, David Brandfonbrener, Sham~M. Kakade, and Eran Malach. 2024.
 Najoung Kim and Sebastian Schuster. 2023.
 \newblock \href {http://arxiv.org/abs/2305.02363} {Entity tracking in language models}.
 
-\bibitem[{Meng et~al.(2023)Meng, Bau, Andonian, and Belinkov}]{meng2022rome}
-Kevin Meng, David Bau, Alex Andonian, and Yonatan Belinkov. 2023.
-\newblock \href {http://arxiv.org/abs/2202.05262} {Locating and editing factual associations in gpt}.
+\bibitem[{Meng et~al.(2022)Meng, Bau, Andonian, and Belinkov}]{meng2022rome}
+Kevin Meng, David Bau, Alex Andonian, and Yonatan Belinkov. 2022.
+\newblock \href {https://proceedings.neurips.cc/paper_files/paper/2022/file/6f1d43d5a82a37e89b0665b33bf3a182-Paper-Conference.pdf} {Locating and editing factual associations in gpt}.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~35, pages 17359--17372. Curran Associates, Inc.
 
 \bibitem[{Peng et~al.(2023)Peng, Alcaide, Anthony, Albalak, Arcadinho, Biderman, Cao, Cheng, Chung, Grella, GV, He, Hou, Lin, Kazienko, Kocon, Kong, Koptyra, Lau, Mantri, Mom, Saito, Song, Tang, Wang, Wind, Wozniak, Zhang, Zhang, Zhao, Zhou, Zhou, Zhu, and Zhu}]{peng2023rwkv}
 Bo~Peng, Eric Alcaide, Quentin Anthony, Alon Albalak, Samuel Arcadinho, Stella Biderman, Huanqi Cao, Xin Cheng, Michael Chung, Matteo Grella, Kranthi~Kiran GV, Xuzheng He, Haowen Hou, Jiaju Lin, Przemyslaw Kazienko, Jan Kocon, Jiaming Kong, Bartlomiej Koptyra, Hayden Lau, Krishna Sri~Ipsit Mantri, Ferdinand Mom, Atsushi Saito, Guangyu Song, Xiangru Tang, Bolun Wang, Johan~S. Wind, Stanislaw Wozniak, Ruichong Zhang, Zhenyuan Zhang, Qihang Zhao, Peng Zhou, Qinghua Zhou, Jian Zhu, and Rui-Jie Zhu. 2023.
@@ -121,9 +122,10 @@ Julien Siems, Timur Carstensen, Arber Zela, Frank Hutter, Massimiliano Pontil, a
 Jimmy T.~H. Smith, Andrew Warrington, and Scott~W. Linderman. 2023.
 \newblock \href {http://arxiv.org/abs/2208.04933} {Simplified state space layers for sequence modeling}.
 
-\bibitem[{Vaswani et~al.(2023)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin}]{vaswani2017attention}
-Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N. Gomez, Lukasz Kaiser, and Illia Polosukhin. 2023.
-\newblock \href {http://arxiv.org/abs/1706.03762} {Attention is all you need}.
+\bibitem[{Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones, Gomez, Kaiser, and Polosukhin}]{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan~N Gomez, \L~ukasz Kaiser, and Illia Polosukhin. 2017.
+\newblock \href {https://proceedings.neurips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf} {Attention is all you need}.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~30. Curran Associates, Inc.
 
 \bibitem[{Wu et~al.(2025)Wu, Geiger, and Millière}]{wu2025variablebinding}
 Yiwei Wu, Atticus Geiger, and Raphaël Millière. 2025.
